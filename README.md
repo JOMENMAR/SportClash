@@ -12,12 +12,12 @@ Este repo es el **frontend** (Vue 3 + Vite + Tailwind) y usa **Firebase** (Auth 
 - Ligas en Firestore: crear (pública/privada), listar (“Mis ligas” / “Global”), abrir una liga.
 	- Nota: se eliminaron los códigos; la entrada se hace por **solicitud** y aprobación.
 - Interior de liga (pantalla tipo dashboard):
-	- Roles: `owner`, `admin`, `moderator`, `member`.
+	- Roles: `owner`, `admin`, `member`.
 	- Gestión de miembros: expulsar, cambiar rol (con reglas en UI, p. ej. no tocar al owner).
-	- Solicitudes de unión: un usuario solicita entrar; owner/admin/mod lo decide.
+	- Solicitudes de unión: un usuario solicita entrar; owner/admin lo decide.
 	- Puntos: crear solicitud (1 punto) con **fecha obligatoria** (`performedOn`) + nota.
 	- Moderación de puntos: aprobar o rechazar con **motivo** (`rejectReason`) + **fecha de rechazo** (`rejectedOn`).
-	- Regla anti-trampa en UI: admin/mod (no owner) no puede moderar su propia solicitud.
+	- Regla anti-trampa en UI: admin (no owner) no puede moderar su propia solicitud.
 	- Ranking y log de historial (auditoría “best-effort”).
 - UX/visual:
 	- Layout unificado con `BasePage.vue`.
@@ -60,7 +60,7 @@ Colecciones principales:
 - `leagueMembers/{leagueId_uid}`
 	- `leagueId: string`
 	- `uid: string`
-	- `role: 'owner' | 'admin' | 'moderator' | 'member'`
+	- `role: 'owner' | 'admin' | 'member'`
 	- `joinedAt: serverTimestamp()`
 
 - `leagueJoinRequests/{leagueId_uid}`
@@ -133,7 +133,7 @@ Notas:
 3) Revisa las reglas de Firestore.
 
 - En desarrollo puedes empezar con reglas permisivas.
-- En producción necesitas reglas que implementen permisos por rol (owner/admin/moderator/member).
+- En producción necesitas reglas que implementen permisos por rol (owner/admin/member).
 
 ## Debug
 

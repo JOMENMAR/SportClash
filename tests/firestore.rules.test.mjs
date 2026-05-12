@@ -205,7 +205,9 @@ test("Members: only owner can change roles and kick", async () => {
   const ownerDb = testEnv.authenticatedContext("alice").firestore();
   const adminDb = testEnv.authenticatedContext("admin1").firestore();
 
-  await assertFails(updateDoc(doc(adminDb, "leagueMembers", "L1_m1"), { role: "moderator" }));
+  await assertFails(
+    updateDoc(doc(adminDb, "leagueMembers", "L1_m1"), { role: "admin" }),
+  );
   await assertSucceeds(updateDoc(doc(ownerDb, "leagueMembers", "L1_m1"), { role: "admin" }));
 
   await assertFails(deleteDoc(doc(adminDb, "leagueMembers", "L1_m1")));
@@ -269,7 +271,6 @@ test("JoinRequests: requester can create and re-request after rejection (public 
 test("PointRequests: member can create/edit/delete pending; reject requires reason; admin cannot self-moderate", async () => {
   await seedLeague({ leagueId: "L1", ownerUid: "alice" });
   await seedMember({ leagueId: "L1", uid: "admin1", role: "admin" });
-  await seedMember({ leagueId: "L1", uid: "mod1", role: "moderator" });
   await seedMember({ leagueId: "L1", uid: "m1", role: "member" });
 
   const memberDb = testEnv.authenticatedContext("m1").firestore();

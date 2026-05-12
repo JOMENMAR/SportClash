@@ -198,7 +198,7 @@ export async function updateMemberRoleFirestore({ leagueId, targetUid, role }) {
   if (!leagueId) throw new Error("leagueId requerido");
   if (!targetUid) throw new Error("targetUid requerido");
   const newRole = String(role || "");
-  if (!["admin", "moderator", "member"].includes(newRole)) {
+  if (!["admin", "member"].includes(newRole)) {
     throw new Error("Rol inválido");
   }
 
@@ -605,7 +605,7 @@ export async function decidePointRequestFirestore({
     throw new Error("Debes indicar un motivo para rechazar");
   }
 
-  // Nota: el permiso real lo pondrán las rules (owner/admin/moderator).
+  // Nota: el permiso real lo pondrán las rules (owner/admin).
   const patch = {
     status,
     decidedAt: serverTimestamp(),

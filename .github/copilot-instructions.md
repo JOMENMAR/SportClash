@@ -26,6 +26,6 @@
 - Rules tests (emulador): `npm run test:rules`
 
 ## Convenios
-- Roles: `owner/admin/moderator/member`.
-- Anti-trampa: admin/mod no moderan sus propios puntos; owner sí (siempre que el producto no diga lo contrario).
+- Roles: `owner/admin/member`.
+- Anti-trampa: admin no puede crear/aprobar/rechazar/moderar sus propios puntos; owner sí (siempre que el producto no diga lo contrario).
 - Cada ejercicio/solicitud de puntos vale 1.

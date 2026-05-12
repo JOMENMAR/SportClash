@@ -36,7 +36,7 @@ service cloud.firestore {
     }
 
     function roleOk(r) {
-      return r in ['owner', 'admin', 'moderator', 'member'];
+      return r in ['owner', 'admin', 'member'];
     }
 
     function isoDateOk(s) {
@@ -83,7 +83,7 @@ service cloud.firestore {
     }
 
     function canModeratePoints(leagueId) {
-      return roleIn(leagueId, ['owner', 'admin', 'moderator']);
+      return roleIn(leagueId, ['owner', 'admin']);
     }
 
     function onlyChangedKeys(allowedKeys) {
@@ -283,7 +283,7 @@ service cloud.firestore {
         && (!('rejectReason' in request.resource.data) || request.resource.data.rejectReason == null);
 
       // Leer:
-      // - owner/admin/moderator: todas las solicitudes de la liga
+      // - owner/admin: todas las solicitudes de la liga
       // - usuario: sólo las suyas
       allow get, list: if signedIn() && resource != null && (
         canModeratePoints(resource.data.leagueId) || resource.data.uid == uid()

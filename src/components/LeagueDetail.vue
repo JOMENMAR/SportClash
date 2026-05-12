@@ -221,7 +221,6 @@
                             "
                           >
                             <option value="member">member</option>
-                            <option value="moderator">moderator</option>
                             <option v-if="isOwner" value="admin">admin</option>
                           </select>
 
@@ -1137,7 +1136,7 @@ const rankingError = ref("");
 const canModerate = computed(() => {
   // Moderación de puntos
   const r = membership.value?.role;
-  return r === "owner" || r === "admin" || r === "moderator";
+  return r === "owner" || r === "admin";
 });
 
 const canModerateJoins = computed(() => {
@@ -1182,7 +1181,6 @@ const roleLabel = computed(() => {
   if (!r) return "";
   if (r === "owner") return "Owner";
   if (r === "admin") return "Admin";
-  if (r === "moderator") return "Moderador";
   return "Miembro";
 });
 
@@ -1391,8 +1389,8 @@ async function loadMembers() {
       max: 200,
     });
 
-    // orden: owner/admin/moderator/member y luego por uid
-    const roleRank = { owner: 0, admin: 1, moderator: 2, member: 3 };
+    // orden: owner/admin/member y luego por uid
+    const roleRank = { owner: 0, admin: 1, member: 2 };
     items.sort((a, b) => {
       const ra = roleRank[String(a.role)] ?? 99;
       const rb = roleRank[String(b.role)] ?? 99;
