@@ -27,7 +27,7 @@ Este repo es el **frontend** (Vue 3 + Vite + Tailwind) y usa **Firebase** (Auth 
 ## Estructura del proyecto
 
 - `src/components/`: componentes Vue (Login, Register, Verify, Home, etc.).
-- `src/firebase.js`: configuración de Firebase.
+- `src/firebase.js`: inicialización de Firebase (lee credenciales desde variables de entorno de Vite).
 - `src/services/`: capa de servicios (logger y acceso a Firestore para ligas).
 - `src/style.css`: Tailwind + estilos globales.
 
@@ -123,7 +123,12 @@ npm run preview
 - **Authentication** (Email/Password y/o los proveedores que uses).
 - **Firestore**.
 
-2) Actualiza la config en `src/firebase.js` con tus credenciales del proyecto.
+2) Crea un archivo `.env` (puedes partir de `.env.example`) y rellena tus credenciales del proyecto.
+
+Notas:
+
+- En Vite las variables deben empezar por `VITE_`.
+- No subas `.env` a GitHub (ya está en `.gitignore`).
 
 3) Revisa las reglas de Firestore.
 
