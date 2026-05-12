@@ -1,0 +1,365 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- Helpers ----------
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function uid() {
+      return request.auth.uid;
+    }
+
+    function nonEmptyString(s, maxLen) {
+      return s is string && s.size() > 0 && s.size() <= maxLen;
+    }
+
+    function stringMax(s, maxLen) {
+      return s is string && s.size() <= maxLen;
+    }
+
+    function isNumeric(n) {
+      return n is int || n is number;
+    }
+
+    function isIntLike(n) {
+      return (n is int) || (n is number && n == n.floor());
+    }
+
+    function dailyLimitOk(n) {
+      return isIntLike(n) && n >= 1 && n <= 100000;
+    }
+
+    function visibilityOk(v) {
+      return v == 'public' || v == 'private';
+    }
+
+    function roleOk(r) {
+      return r in ['owner', 'admin', 'moderator', 'member'];
+    }
+
+    function isoDateOk(s) {
+      // ISO date-only: YYYY-MM-DD
+      return s is string && s.matches('^\\d{4}-\\d{2}-\\d{2}$');
+    }
+
+    function memberDocId(leagueId, userId) {
+      return leagueId + '_' + userId;
+    }
+
+    function leagueRef(leagueId) {
+      return /databases/$(database)/documents/leagues/$(leagueId);
+    }
+
+    function leagueExists(leagueId) {
+      return exists(leagueRef(leagueId));
+    }
+
+    function membershipRef(leagueId, userId) {
+      return /databases/$(database)/documents/leagueMembers/$(memberDocId(leagueId, userId));
+    }
+
+    function joinReqRef(leagueId, userId) {
+      return /databases/$(database)/documents/leagueJoinRequests/$(memberDocId(leagueId, userId));
+    }
+
+    function isMember(leagueId) {
+      return signedIn() && exists(membershipRef(leagueId, uid()));
+    }
+
+    function roleIn(leagueId, roles) {
+      return signedIn()
+        && exists(membershipRef(leagueId, uid()))
+        && get(membershipRef(leagueId, uid())).data.role in roles;
+    }
+
+    function isOwner(leagueId) {
+      return roleIn(leagueId, ['owner']);
+    }
+
+    function isAdminLike(leagueId) {
+      return roleIn(leagueId, ['owner', 'admin']);
+    }
+
+    function canModeratePoints(leagueId) {
+      return roleIn(leagueId, ['owner', 'admin', 'moderator']);
+    }
+
+    function onlyChangedKeys(allowedKeys) {
+      return request.resource.data.diff(resource.data).changedKeys().hasOnly(allowedKeys);
+    }
+
+    // ---------- USERS ----------
+    match /users/{userId} {
+      // Perfiles públicos (para futura página pre-login y perfiles visitables)
+      allow get: if true;
+
+      // Evitamos enumeración masiva
+      allow list: if false;
+
+      // Cada usuario sólo puede escribir su doc
+      allow create, update, delete: if signedIn() && uid() == userId;
+    }
+
+    // ---------- LEAGUES ----------
+    match /leagues/{leagueId} {
+
+      // Get público (si tienes el URL/id puedes ver la liga, incluso si es private)
+      allow get: if true;
+
+      // List sólo devuelve ligas públicas (las privadas no son enumerables)
+      allow list: if resource != null && resource.data.visibility == 'public';
+
+      // Crear liga: cualquiera autenticado
+      allow create: if signedIn()
+        && nonEmptyString(request.resource.data.name, 80)
+        && visibilityOk(request.resource.data.visibility)
+        && dailyLimitOk(request.resource.data.dailyPointsLimit)
+        && request.resource.data.createdBy == uid()
+        && request.resource.data.membersCount == 1
+        && request.resource.data.createdAt == request.time;
+
+      // Update:
+      // - owner: puede editar nombre/visibilidad/límite
+      // - owner/admin: pueden ajustar membersCount (por transacciones de join/kick)
+      allow update: if signedIn() && resource != null && (
+        (
+          isOwner(leagueId)
+          && onlyChangedKeys(['name', 'visibility', 'dailyPointsLimit'])
+          && nonEmptyString(request.resource.data.name, 80)
+          && visibilityOk(request.resource.data.visibility)
+          && dailyLimitOk(request.resource.data.dailyPointsLimit)
+          && request.resource.data.createdBy == resource.data.createdBy
+          && request.resource.data.createdAt == resource.data.createdAt
+          && request.resource.data.membersCount == resource.data.membersCount
+        )
+        ||
+        (
+          isAdminLike(leagueId)
+          && onlyChangedKeys(['membersCount'])
+          && isIntLike(request.resource.data.membersCount)
+          && request.resource.data.membersCount >= 1
+          && request.resource.data.createdBy == resource.data.createdBy
+          && request.resource.data.createdAt == resource.data.createdAt
+          && request.resource.data.name == resource.data.name
+          && request.resource.data.visibility == resource.data.visibility
+          && request.resource.data.dailyPointsLimit == resource.data.dailyPointsLimit
+        )
+      );
+
+      // Delete: sólo owner
+      allow delete: if signedIn() && resource != null && isOwner(leagueId);
+    }
+
+    // ---------- LEAGUE MEMBERS ----------
+    match /leagueMembers/{memberId} {
+
+      // Lectura: sólo miembros de la liga
+      allow get, list: if signedIn() && resource != null && isMember(resource.data.leagueId);
+
+      // Crear membership:
+      // - bootstrap del owner al crear liga (self + role=owner)
+      // - owner/admin aprueban joins creando role=member
+      allow create: if signedIn()
+        && request.resource.data.leagueId is string
+        && request.resource.data.uid is string
+        && memberId == memberDocId(request.resource.data.leagueId, request.resource.data.uid)
+        && request.resource.data.joinedAt == request.time
+        && roleOk(request.resource.data.role)
+        && (
+          (
+            request.resource.data.uid == uid()
+            && request.resource.data.role == 'owner'
+            && leagueExists(request.resource.data.leagueId)
+            && get(leagueRef(request.resource.data.leagueId)).data.createdBy == uid()
+          )
+          ||
+          (
+            isAdminLike(request.resource.data.leagueId)
+            && request.resource.data.role == 'member'
+            && leagueExists(request.resource.data.leagueId)
+          )
+        );
+
+      // Cambiar rol: sólo owner.
+      // - nunca se puede cambiar a owner
+      // - nunca se puede modificar el doc del owner
+      allow update: if signedIn()
+        && resource != null
+        && isOwner(resource.data.leagueId)
+        && onlyChangedKeys(['role'])
+        && request.resource.data.leagueId == resource.data.leagueId
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.joinedAt == resource.data.joinedAt
+        && roleOk(request.resource.data.role)
+        && resource.data.role != 'owner'
+        && request.resource.data.role != 'owner';
+
+      // Expulsar: sólo owner, nunca al owner
+      allow delete: if signedIn()
+        && resource != null
+        && isOwner(resource.data.leagueId)
+        && resource.data.role != 'owner';
+    }
+
+    // ---------- JOIN REQUESTS ----------
+    match /leagueJoinRequests/{reqId} {
+
+      // Get: el solicitante ve la suya, y owner/admin ven todas
+      allow get: if signedIn() && resource != null && (
+        resource.data.uid == uid() || isAdminLike(resource.data.leagueId)
+      );
+
+      // List: sólo owner/admin (moderación)
+      allow list: if signedIn() && resource != null && isAdminLike(resource.data.leagueId);
+
+      // Crear: usuario solicita unirse (si no es miembro)
+      allow create: if signedIn()
+        && request.resource.data.leagueId is string
+        && request.resource.data.uid == uid()
+        && reqId == memberDocId(request.resource.data.leagueId, uid())
+        && leagueExists(request.resource.data.leagueId)
+        && !exists(membershipRef(request.resource.data.leagueId, uid()))
+        && request.resource.data.status == 'pending'
+        && request.resource.data.createdAt == request.time
+        && (!('decidedBy' in request.resource.data) || request.resource.data.decidedBy == null)
+        && (!('decidedAt' in request.resource.data) || request.resource.data.decidedAt == null);
+
+      // Update:
+      // A) Moderación (owner/admin): decide approved/rejected
+      // B) Re-solicitud (usuario) sólo si estaba rejected y la liga es public
+      allow update: if signedIn() && resource != null && (
+        (
+          isAdminLike(resource.data.leagueId)
+          && resource.data.status == 'pending'
+          && request.resource.data.leagueId == resource.data.leagueId
+          && request.resource.data.uid == resource.data.uid
+          && request.resource.data.createdAt == resource.data.createdAt
+          && request.resource.data.status in ['approved', 'rejected']
+          && request.resource.data.decidedBy == uid()
+          && request.resource.data.decidedAt == request.time
+          && onlyChangedKeys(['status', 'decidedAt', 'decidedBy'])
+        )
+        ||
+        (
+          resource.data.uid == uid()
+          && resource.data.status == 'rejected'
+          && get(leagueRef(resource.data.leagueId)).data.visibility == 'public'
+          && !exists(membershipRef(resource.data.leagueId, uid()))
+          && request.resource.data.leagueId == resource.data.leagueId
+          && request.resource.data.uid == resource.data.uid
+          && request.resource.data.status == 'pending'
+          && request.resource.data.createdAt == request.time
+          && request.resource.data.decidedAt == null
+          && request.resource.data.decidedBy == null
+          && onlyChangedKeys(['status', 'createdAt', 'decidedAt', 'decidedBy'])
+        )
+      );
+
+      // Cancelar (opcional): el propio usuario puede borrar si pending o rejected
+      allow delete: if signedIn() && resource != null
+        && resource.data.uid == uid()
+        && resource.data.status in ['pending', 'rejected'];
+    }
+
+    // ---------- POINT REQUESTS ----------
+    match /pointRequests/{requestId} {
+
+      // Crear: sólo miembros, 1 punto, fecha obligatoria
+      allow create: if signedIn()
+        && request.resource.data.leagueId is string
+        && leagueExists(request.resource.data.leagueId)
+        && isMember(request.resource.data.leagueId)
+        && request.resource.data.uid == uid()
+        && request.resource.data.points == 1
+        && stringMax(request.resource.data.note, 500)
+        && isoDateOk(request.resource.data.performedOn)
+        && request.resource.data.status == 'pending'
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.decidedAt == null
+        && request.resource.data.decidedBy == null
+        && request.resource.data.rejectedOn == null
+        && (!('rejectReason' in request.resource.data) || request.resource.data.rejectReason == null);
+
+      // Leer:
+      // - owner/admin/moderator: todas las solicitudes de la liga
+      // - usuario: sólo las suyas
+      allow get, list: if signedIn() && resource != null && (
+        canModeratePoints(resource.data.leagueId) || resource.data.uid == uid()
+      );
+
+      // Update:
+      // A) Usuario edita nota (sólo pending)
+      // B) Moderación decide approved/rejected (y motivo obligatorio si rejected)
+      allow update: if signedIn() && resource != null && (
+        (
+          resource.data.uid == uid()
+          && resource.data.status == 'pending'
+          && onlyChangedKeys(['note'])
+          && stringMax(request.resource.data.note, 500)
+          && request.resource.data.leagueId == resource.data.leagueId
+          && request.resource.data.uid == resource.data.uid
+          && request.resource.data.points == resource.data.points
+          && request.resource.data.performedOn == resource.data.performedOn
+          && request.resource.data.createdAt == resource.data.createdAt
+          && request.resource.data.status == resource.data.status
+          && request.resource.data.decidedAt == resource.data.decidedAt
+          && request.resource.data.decidedBy == resource.data.decidedBy
+          && request.resource.data.rejectReason == resource.data.rejectReason
+          && request.resource.data.rejectedOn == resource.data.rejectedOn
+        )
+        ||
+        (
+          canModeratePoints(resource.data.leagueId)
+          && resource.data.status == 'pending'
+          // anti-trampa: admin/mod no moderan lo suyo (owner sí)
+          && (resource.data.uid != uid() || isOwner(resource.data.leagueId))
+          && request.resource.data.leagueId == resource.data.leagueId
+          && request.resource.data.uid == resource.data.uid
+          && request.resource.data.points == resource.data.points
+          && request.resource.data.note == resource.data.note
+          && request.resource.data.performedOn == resource.data.performedOn
+          && request.resource.data.createdAt == resource.data.createdAt
+          && request.resource.data.status in ['approved', 'rejected']
+          && request.resource.data.decidedBy == uid()
+          && request.resource.data.decidedAt == request.time
+          && (
+            (
+              request.resource.data.status == 'approved'
+              && request.resource.data.rejectReason == null
+              && request.resource.data.rejectedOn == null
+            )
+            ||
+            (
+              request.resource.data.status == 'rejected'
+              && nonEmptyString(request.resource.data.rejectReason, 300)
+              && isoDateOk(request.resource.data.rejectedOn)
+            )
+          )
+          && onlyChangedKeys(['status', 'decidedAt', 'decidedBy', 'rejectReason', 'rejectedOn'])
+        )
+      );
+
+      // Delete: el usuario puede borrar sólo si pending
+      allow delete: if signedIn() && resource != null
+        && resource.data.uid == uid()
+        && resource.data.status == 'pending';
+    }
+
+    // ---------- LEAGUE HISTORY ----------
+    match /leagueHistory/{eventId} {
+
+      // Lectura (query-safe):
+      // - todos: sólo lo que les corresponde consultando por visibleToUids
+      // Nota: para que esto funcione, el backend debe escribir:
+      //   - visibleToUids: unión de (admins de la liga) + (uids implicados)
+      // (Opcionalmente puede seguir guardando adminUids/subjectUids para debug/auditoría)
+      allow get, list: if signedIn() && resource != null
+        && resource.data.visibleToUids.hasAny([uid()]);
+
+      // Escritura: sólo backend
+      allow create, update, delete: if false;
+    }
+  }
+}

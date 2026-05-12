@@ -1,0 +1,100 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Estilos personalizados compatibles con Tailwind */
+
+/* Reutilizable: fondo animado (usado en Login/Register/Verify) */
+.animated-gradient-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(
+    120deg,
+    #0f172a,
+    #0e7490,
+    #a21caf,
+    #059669,
+    #0f172a
+  );
+  background-size: 400% 400%;
+  animation: gradientMove 18s ease-in-out infinite;
+}
+
+@keyframes gradientMove {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+body {
+  @apply min-h-screen bg-gradient-to-br from-purple-600 to-indigo-700;
+}
+
+/*
+  Layout helper para pantallas dentro de la app:
+  - Evita que el TopNav (sticky) tape el inicio del contenido.
+  - Evita que el Footer tape el final del contenido.
+  Usamos padding "generoso" (pt-10/pb-20) como pediste.
+  Nota: Tailwind pt-10 = 2.5rem, pb-20 = 5rem.
+*/
+:root {
+  --sc-top-offset: 2.5rem;
+  --sc-bottom-offset: 5rem;
+}
+
+.sc-screen {
+  padding-top: var(--sc-top-offset);
+  padding-bottom: var(--sc-bottom-offset);
+}
+
+/*
+  Scroll global:
+  Muchas pantallas usan contenedores full-screen con `overflow-hidden`, lo que
+  bloquea el scroll. Forzamos el scroll en la raíz del documento.
+  Las pantallas internas pueden seguir usando sus propios layouts.
+*/
+html,
+body {
+  height: 100%;
+  overflow-y: auto;
+}
+
+/* iOS/Safari: mantener scroll suave */
+body {
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+h1,
+h2 {
+  @apply font-bold text-gray-800;
+}
+
+h1 {
+  @apply mb-8 text-4xl md:text-6xl;
+}
+
+h2 {
+  @apply mb-4 text-2xl md:text-3xl;
+}
+
+.card {
+  @apply w-full max-w-md p-8 bg-white shadow-lg rounded-xl;
+}
+
+.input {
+  @apply w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500;
+}
+
+.btn-primary {
+  @apply w-full px-4 py-2 font-bold text-white transition-colors bg-purple-600 rounded-lg hover:bg-purple-700;
+}
+
+.error-message {
+  @apply mt-4 text-center text-red-500;
+}
