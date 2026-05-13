@@ -1334,11 +1334,18 @@ async function load() {
   loading.value = true;
   error.value = "";
   try {
-    const [l, m] = await Promise.all([
-      fetchLeagueByIdFirestore(props.leagueId),
-      fetchMyMembershipInLeagueFirestore(props.leagueId),
-    ]);
+    const l = await fetchLeagueByIdFirestore(props.leagueId);
     league.value = l;
+
+    let m = null;
+    try {
+      m = await fetchMyMembershipInLeagueFirestore(props.leagueId);
+    } catch (e) {
+      // Cuando el doc no existe, nuestras rules pueden responder PERMISSION_DENIED.
+      // En ese caso, lo interpretamos como “no eres miembro” para mostrar vista visitante.
+      if (String(e?.code || "") !== "permission-denied") throw e;
+      m = null;
+    }
     membership.value = m;
 
     // Si no es miembro, mira si tiene solicitud previa.
