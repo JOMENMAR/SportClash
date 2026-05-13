@@ -22,7 +22,7 @@ import {
 } from "firebase/firestore";
 
 const PROJECT_ID = "demo-sportclash";
-const FIRESTORE_PORT = 8081;
+const FIRESTORE_PORT = 8082;
 
 let testEnv;
 
@@ -213,6 +213,16 @@ test("Members: only owner can change roles and kick", async () => {
 
   await assertFails(deleteDoc(doc(adminDb, "leagueMembers", "L1_m1")));
   await assertSucceeds(deleteDoc(doc(ownerDb, "leagueMembers", "L1_m1")));
+});
+
+test("Members: user can get their own membership doc even if missing", async () => {
+  await seedLeague({ leagueId: "L1", ownerUid: "alice" });
+
+  const userDb = testEnv.authenticatedContext("u2").firestore();
+  const snap = await assertSucceeds(
+    getDoc(doc(userDb, "leagueMembers", "L1_u2")),
+  );
+  assert.equal(snap.exists(), false);
 });
 
 test("JoinRequests: requester can create and re-request after rejection (public only)", async () => {

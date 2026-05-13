@@ -155,8 +155,17 @@ service cloud.firestore {
     // ---------- LEAGUE MEMBERS ----------
     match /leagueMembers/{memberId} {
 
-      // Lectura: sólo miembros de la liga
-      allow get, list: if signedIn() && resource != null && isMember(resource.data.leagueId);
+      // Lectura:
+      // - list: sólo miembros de la liga (evita enumeración)
+      // - get: miembros de la liga, y además el usuario puede leer SU propio doc
+      //        aunque no exista (para que el frontend pueda comprobar membership
+      //        sin PERMISSION_DENIED).
+      allow list: if signedIn() && resource != null && isMember(resource.data.leagueId);
+
+      allow get: if signedIn() && (
+        (resource != null && isMember(resource.data.leagueId))
+        || memberId.matches('^.+_' + uid() + '$')
+      );
 
       // Crear membership:
       // - bootstrap del owner al crear liga (self + role=owner)
