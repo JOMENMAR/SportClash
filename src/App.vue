@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, watch } from "vue";
+import { ref, onMounted, watch, computed } from "vue";
 import { auth, db } from "./firebase";
 import { onAuthStateChanged, getRedirectResult } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
@@ -34,6 +34,19 @@ const joinInitialCode = ref("");
 const activeLeagueId = ref("");
 
 const authRedirectFinishing = ref(false);
+
+const chromeSteps = [
+  "home",
+  "leagues",
+  "myLeagues",
+  "global",
+  "createLeague",
+  "joinLeague",
+  "leagueDetail",
+  "profile",
+];
+
+const showsChrome = computed(() => chromeSteps.includes(step.value));
 
 watch(
   step,
@@ -293,18 +306,7 @@ function navActive() {
   <div class="min-h-[100dvh] flex flex-col">
     <ToastHost />
     <TopNav
-      v-if="
-        [
-          'home',
-          'leagues',
-          'myLeagues',
-          'global',
-          'createLeague',
-          'joinLeague',
-          'leagueDetail',
-          'profile',
-        ].includes(step)
-      "
+      v-if="showsChrome"
       :active="navActive()"
       @go-home="goHome"
       @go-my-leagues="goMyLeagues"
@@ -318,7 +320,7 @@ function navActive() {
       Como TopNav es sticky y el footer ocupa espacio, aquí reservamos ese hueco para
       que el contenido no quede tapado al hacer scroll.
     -->
-    <main class="flex-1 sc-screen">
+    <main :class="['flex-1', showsChrome ? 'sc-screen' : '']">
       <div
         v-if="authRedirectFinishing"
         class="min-h-[60dvh] grid place-items-center px-4"
@@ -398,20 +400,7 @@ function navActive() {
     </main>
 
     <div class="shrink-0">
-      <AppFooter
-        v-if="
-          [
-            'home',
-            'leagues',
-            'myLeagues',
-            'global',
-            'createLeague',
-            'joinLeague',
-            'leagueDetail',
-            'profile',
-          ].includes(step)
-        "
-      />
+      <AppFooter v-if="showsChrome" />
     </div>
   </div>
 </template>
