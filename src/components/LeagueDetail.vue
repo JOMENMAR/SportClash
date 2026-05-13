@@ -1439,7 +1439,6 @@ async function saveMemberRole(member) {
 
 async function kickMember(member) {
   if (!member?.uid) return;
-  if (!confirm(`¿Expulsar a ${userLabel(member.uid)} de la liga?`)) return;
   membersActionMsg.value = "";
   memberBusyId.value = member.id;
   try {

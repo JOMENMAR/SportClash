@@ -196,6 +196,7 @@ import {
   signInWithPopup,
   signInWithRedirect,
 } from "firebase/auth";
+import { group, groupEnd, error as logError } from "../services/logger";
 
 async function loginWithPopup(provider, label) {
   if (loading.value) return;
@@ -221,13 +222,14 @@ async function loginWithPopup(provider, label) {
       return;
     }
 
-    console.group(`[Auth] ${label} signInWithPopup failed`);
-    console.error(e);
-    console.log("code:", e?.code);
-    console.log("message:", e?.message);
-    console.log("customData:", e?.customData);
-    console.log("email:", e?.customData?.email);
-    console.groupEnd();
+    group("Auth", `${label} signInWithPopup failed`, {
+      code: e?.code,
+      message: e?.message,
+      customData: e?.customData,
+      email: e?.customData?.email,
+    });
+    logError("Auth", "error", e);
+    groupEnd();
 
     const code = e?.code ? `${e.code} - ` : "";
     let hint = "";

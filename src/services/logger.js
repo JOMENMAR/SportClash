@@ -3,7 +3,7 @@
 //   import { log, warn, error, group, groupEnd, setDebugEnabled } from './services/logger'
 //   log('Auth', 'state changed', { uid })
 
-let debugEnabled = true;
+let debugEnabled = false;
 
 // Allow overriding from DevTools:
 //   localStorage.setItem('sportclash:debug', '1')

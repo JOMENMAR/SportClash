@@ -256,19 +256,33 @@ export async function requestToJoinLeagueFirestore(leagueId) {
   const reqId = `${leagueId}_${user.uid}`;
   const ref = doc(db, "leagueJoinRequests", reqId);
 
-  // idempotente: si ya existe, no pasa nada.
-  await setDoc(
-    ref,
-    {
-      leagueId: String(leagueId),
-      uid: user.uid,
+  const snap = await getDoc(ref);
+  if (snap.exists()) {
+    const data = snap.data();
+    const status = String(data?.status || "");
+
+    // Si ya está pendiente o aprobada, no re-escribimos (evita update no permitido por rules).
+    if (status === "pending" || status === "approved") return;
+
+    // Si fue rechazada, permitimos re-solicitar (rules lo limitarán a ligas públicas).
+    await updateDoc(ref, {
       status: "pending",
       createdAt: serverTimestamp(),
       decidedAt: null,
       decidedBy: null,
-    },
-    { merge: true },
-  );
+    });
+    return;
+  }
+
+  // Create inicial.
+  await setDoc(ref, {
+    leagueId: String(leagueId),
+    uid: user.uid,
+    status: "pending",
+    createdAt: serverTimestamp(),
+    decidedAt: null,
+    decidedBy: null,
+  });
 }
 
 export async function fetchMyJoinRequestInLeagueFirestore(leagueId) {
@@ -377,8 +391,7 @@ export async function createPointRequestFirestore({
   if (!leagueId) throw new Error("leagueId requerido");
   if (!performedOn) throw new Error("La fecha es obligatoria");
   const dateStr = String(performedOn).trim();
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr))
-    throw new Error("Fecha inválida");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) throw new Error("Fecha inválida");
   if (dateStr > localIsoDateToday()) {
     throw new Error("La fecha no puede ser futura");
   }

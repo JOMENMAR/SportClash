@@ -285,8 +285,14 @@ service cloud.firestore {
       // Leer:
       // - owner/admin: todas las solicitudes de la liga
       // - usuario: sólo las suyas
+      // - miembros: pueden leer las aprobadas (para ranking)
       allow get, list: if signedIn() && resource != null && (
-        canModeratePoints(resource.data.leagueId) || resource.data.uid == uid()
+        canModeratePoints(resource.data.leagueId)
+        || resource.data.uid == uid()
+        || (
+          resource.data.status == 'approved'
+          && isMember(resource.data.leagueId)
+        )
       );
 
       // Update:

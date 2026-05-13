@@ -5,7 +5,7 @@
 - **Frontend:** Vue 3 (Composition API) + Vite + Tailwind.
 - **Servicios:** Firebase
   - **Auth:** email/password + OAuth (Google/Facebook/Microsoft/Discord).
-  - **Firestore:** perfiles y ligas (v1) ya cableados. Puntos/stats: pendiente.
+  - **Firestore:** perfiles + ligas + solicitudes de unión + solicitudes de puntos + historial (auditoría).
 
 ## Pantallas (actual)
 
@@ -16,7 +16,8 @@
 - `Home.vue`: home inicial (liga reciente + stats) con datos mock.
 - `Leagues.vue`: “Mis ligas” (pertenencia) + “Global” (públicas).
 - `CreateLeague.vue`: crear liga.
-- `JoinLeague.vue`: unirte por código.
+- `JoinLeague.vue`: pantalla informativa (ya no se usan códigos; la entrada es por solicitud).
+- `LeagueDetail.vue`: interior de liga (miembros, solicitudes de unión, puntos, ranking, historial).
 - `Profile.vue`: ver/editar perfil.
 - `TopNav.vue` / `AppFooter.vue`: shell de la app.
 
@@ -55,6 +56,12 @@ Campos clave (borrador):
 - `visibility`: `public` | `private`
 - `dailyPointsLimit`: número (idealmente entero; importante para rules)
 
+Roles dentro de una liga:
+
+- `owner`: dueño de la liga (gestiona miembros y roles).
+- `admin`: modera solicitudes (unión/puntos) pero no puede moderar sus propios puntos.
+- `member`: participa y solicita puntos.
+
 ### Punto (solicitud)
 
 - Un usuario registra que ha realizado un deporte.
@@ -73,8 +80,6 @@ Estados sugeridos:
   - rachas (actual y mejor)
   - puntos totales
 
-## Firestore (propuesta inicial)
-
 ## Firestore (estado actual)
 
 ### Perfiles
@@ -92,19 +97,46 @@ Este esquema está implementado en `src/services/leaguesFirestore.js`.
   - `name: string`
   - `visibility: 'public' | 'private'`
   - `dailyPointsLimit: number`
-  - `code: string` (normalizado en mayúsculas)
   - `createdAt: serverTimestamp()`
   - `createdBy: uid`
   - `membersCount: number`
 
-- `leaguesByCode/{CODE}`
-  - `leagueId: string`
-
 - `leagueMembers/{leagueId_uid}`
   - `leagueId: string`
   - `uid: string`
-  - `role: 'admin' | 'member'`
+  - `role: 'owner' | 'admin' | 'member'`
   - `joinedAt: serverTimestamp()`
+
+- `leagueJoinRequests/{leagueId_uid}`
+  - `leagueId: string`
+  - `uid: string`
+  - `status: 'pending' | 'approved' | 'rejected'`
+  - `createdAt: serverTimestamp()`
+  - `decidedAt: serverTimestamp() | null`
+  - `decidedBy: uid | null`
+
+- `pointRequests/{leagueId_uid_ts}`
+  - `leagueId: string`
+  - `uid: string`
+  - `points: number` (v1: siempre 1)
+  - `note: string`
+  - `performedOn: 'YYYY-MM-DD'` (obligatorio)
+  - `status: 'pending' | 'approved' | 'rejected'`
+  - `createdAt: serverTimestamp()`
+  - `decidedAt: serverTimestamp() | null`
+  - `decidedBy: uid | null`
+  - `rejectReason: string | null`
+  - `rejectedOn: 'YYYY-MM-DD' | null`
+
+- `leagueHistory/{leagueId_type_ts_actorUid_rand}`
+  - `leagueId: string`
+  - `type: string`
+  - `actorUid: string`
+  - `visibleToUids: array<string>` (requerido para queries “query-safe”)
+  - `payload: object`
+  - `createdAt: serverTimestamp()`
+
+Nota: `leagueHistory` es de escritura backend-only; el frontend sólo lee.
 
 ### Servicios
 
@@ -118,4 +150,4 @@ Este esquema está implementado en `src/services/leaguesFirestore.js`.
 - Cerrar reglas de seguridad (ahora es el punto caliente):
   - Ojo con validaciones tipo `int` vs `number`.
   - Evitar `get(...).data` sin comprobar `.exists()`.
-  - Evitar dependencias cruzadas dentro de una misma transacción (p.ej. `leaguesByCode` validando el doc `leagues` que se crea en el mismo commit).
+  - Mantener queries “query-safe” (si una pantalla usa `where(...)`, las rules deben permitir exactamente esa query).

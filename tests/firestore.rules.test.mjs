@@ -133,10 +133,7 @@ test("Public: can get profiles and leagues; cannot list users", async () => {
   // list public leagues (query constrained to visibility==public)
   await assertSucceeds(
     getDocs(
-      query(
-        collection(db, "leagues"),
-        where("visibility", "==", "public"),
-      ),
+      query(collection(db, "leagues"), where("visibility", "==", "public")),
     ),
   );
 
@@ -177,7 +174,9 @@ test("Leagues: owner can edit settings; admin can only update membersCount", asy
   const ownerDb = testEnv.authenticatedContext("alice").firestore();
   const adminDb = testEnv.authenticatedContext("admin1").firestore();
 
-  await assertSucceeds(updateDoc(doc(ownerDb, "leagues", "L1"), { name: "Nuevo" }));
+  await assertSucceeds(
+    updateDoc(doc(ownerDb, "leagues", "L1"), { name: "Nuevo" }),
+  );
 
   await assertSucceeds(
     updateDoc(doc(adminDb, "leagues", "L1"), { membersCount: 2 }),
@@ -208,15 +207,25 @@ test("Members: only owner can change roles and kick", async () => {
   await assertFails(
     updateDoc(doc(adminDb, "leagueMembers", "L1_m1"), { role: "admin" }),
   );
-  await assertSucceeds(updateDoc(doc(ownerDb, "leagueMembers", "L1_m1"), { role: "admin" }));
+  await assertSucceeds(
+    updateDoc(doc(ownerDb, "leagueMembers", "L1_m1"), { role: "admin" }),
+  );
 
   await assertFails(deleteDoc(doc(adminDb, "leagueMembers", "L1_m1")));
   await assertSucceeds(deleteDoc(doc(ownerDb, "leagueMembers", "L1_m1")));
 });
 
 test("JoinRequests: requester can create and re-request after rejection (public only)", async () => {
-  await seedLeague({ leagueId: "pub", ownerUid: "alice", visibility: "public" });
-  await seedLeague({ leagueId: "priv", ownerUid: "alice", visibility: "private" });
+  await seedLeague({
+    leagueId: "pub",
+    ownerUid: "alice",
+    visibility: "public",
+  });
+  await seedLeague({
+    leagueId: "priv",
+    ownerUid: "alice",
+    visibility: "private",
+  });
   await seedMember({ leagueId: "pub", uid: "admin1", role: "admin" });
   await seedMember({ leagueId: "priv", uid: "admin1", role: "admin" });
 
@@ -300,7 +309,9 @@ test("PointRequests: member can create/edit/delete pending; reject requires reas
     }),
   );
 
-  await assertSucceeds(deleteDoc(doc(memberDb, "pointRequests", "L1_m1_pending")));
+  await assertSucceeds(
+    deleteDoc(doc(memberDb, "pointRequests", "L1_m1_pending")),
+  );
 
   // moderation path (separate request)
   await assertSucceeds(
@@ -396,6 +407,59 @@ test("PointRequests: member can create/edit/delete pending; reject requires reas
   );
 });
 
+test("PointRequests: members can read approved requests for ranking; cannot read others' pending", async () => {
+  await seedLeague({ leagueId: "L1", ownerUid: "alice" });
+  await seedMember({ leagueId: "L1", uid: "m1", role: "member" });
+  await seedMember({ leagueId: "L1", uid: "m2", role: "member" });
+
+  await seed(async (db) => {
+    await setDoc(doc(db, "pointRequests", "L1_m2_approved"), {
+      leagueId: "L1",
+      uid: "m2",
+      points: 1,
+      note: "",
+      performedOn: "2026-05-11",
+      status: "approved",
+      createdAt: new Date("2026-05-11T10:00:00Z"),
+      decidedAt: new Date("2026-05-11T12:00:00Z"),
+      decidedBy: "alice",
+      rejectReason: null,
+      rejectedOn: null,
+    });
+
+    await setDoc(doc(db, "pointRequests", "L1_m2_pending"), {
+      leagueId: "L1",
+      uid: "m2",
+      points: 1,
+      note: "",
+      performedOn: "2026-05-11",
+      status: "pending",
+      createdAt: new Date("2026-05-11T10:00:00Z"),
+      decidedAt: null,
+      decidedBy: null,
+      rejectReason: null,
+      rejectedOn: null,
+    });
+  });
+
+  const memberDb = testEnv.authenticatedContext("m1").firestore();
+
+  // member can query approved for ranking
+  const approvedSnap = await assertSucceeds(
+    getDocs(
+      query(
+        collection(memberDb, "pointRequests"),
+        where("leagueId", "==", "L1"),
+        where("status", "==", "approved"),
+      ),
+    ),
+  );
+  assert.equal(approvedSnap.docs.length, 1);
+
+  // but cannot read someone else's pending
+  await assertFails(getDoc(doc(memberDb, "pointRequests", "L1_m2_pending")));
+});
+
 test("LeagueHistory: admin sees all; member must query by visibleToUids", async () => {
   await seedLeague({ leagueId: "L1", ownerUid: "alice" });
   await seedMember({ leagueId: "L1", uid: "admin1", role: "admin" });
@@ -444,7 +508,12 @@ test("LeagueHistory: admin sees all; member must query by visibleToUids", async 
 
   // member query without visibleToUids filter must fail
   await assertFails(
-    getDocs(query(collection(memberDb, "leagueHistory"), where("leagueId", "==", "L1"))),
+    getDocs(
+      query(
+        collection(memberDb, "leagueHistory"),
+        where("leagueId", "==", "L1"),
+      ),
+    ),
   );
 
   // member query with visibleToUids filter must succeed
