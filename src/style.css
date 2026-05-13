@@ -30,6 +30,7 @@
 
 body {
   @apply min-h-screen bg-gradient-to-br from-purple-600 to-indigo-700;
+  margin: 0;
 }
 
 /*
