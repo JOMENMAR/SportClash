@@ -177,6 +177,12 @@ export async function fetchMyMembershipInLeagueFirestore(leagueId) {
   return { id: snap.id, ...snap.data() };
 }
 
+export async function deleteLeagueFirestore(leagueId) {
+  requireUser();
+  if (!leagueId) throw new Error("leagueId requerido");
+  await deleteDoc(doc(db, "leagues", String(leagueId)));
+}
+
 export async function fetchLeagueMembersFirestore({
   leagueId,
   max = 200,

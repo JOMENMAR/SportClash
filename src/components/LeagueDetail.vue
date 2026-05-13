@@ -29,6 +29,23 @@
 
           <div class="flex items-center gap-2">
             <button
+              v-if="membership"
+              type="button"
+              class="px-4 py-2 text-sm font-semibold text-white transition rounded-xl bg-white/10 ring-1 ring-white/10 hover:bg-white/15"
+              @click="copyInviteLink"
+            >
+              Copiar link
+            </button>
+            <button
+              v-if="isOwner"
+              type="button"
+              class="px-4 py-2 text-sm font-semibold text-white transition rounded-xl bg-rose-500/80 ring-1 ring-rose-400/30 hover:bg-rose-500 disabled:opacity-60"
+              :disabled="deleteBusy"
+              @click="openConfirmDeleteLeague"
+            >
+              {{ deleteBusy ? "Borrando…" : "Borrar liga" }}
+            </button>
+            <button
               type="button"
               class="px-4 py-2 text-sm font-semibold text-white transition rounded-xl bg-white/10 ring-1 ring-white/10 hover:bg-white/15"
               @click="$emit('back')"
@@ -959,6 +976,7 @@ import { toast } from "../services/toasts";
 import {
   createPointRequestFirestore,
   decideJoinRequestFirestore,
+  deleteLeagueFirestore,
   deleteMyPointRequestFirestore,
   decidePointRequestFirestore,
   fetchApprovedPointRequestsFirestore,
@@ -1047,6 +1065,52 @@ const confirm = ref({
 
 const confirmPrimaryBtn = ref(null);
 
+const deleteBusy = ref(false);
+
+const inviteUrl = computed(() => {
+  const url = new URL(window.location.origin);
+  url.searchParams.set("join", props.leagueId);
+  return url.toString();
+});
+
+async function copyInviteLink() {
+  const text = inviteUrl.value;
+  if (!text) {
+    toast.error("No se pudo generar el link");
+    return;
+  }
+
+  try {
+    await navigator.clipboard.writeText(text);
+    toast.success("Link copiado");
+    return;
+  } catch {
+    // fallback
+  }
+
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.top = "0";
+    ta.style.left = "0";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    ta.setSelectionRange(0, ta.value.length);
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    if (ok) {
+      toast.success("Link copiado");
+    } else {
+      toast.error("No se pudo copiar el link");
+    }
+  } catch {
+    toast.error("No se pudo copiar el link");
+  }
+}
+
 function closeConfirm() {
   confirm.value = {
     open: false,
@@ -1095,6 +1159,33 @@ function openConfirmDeleteRequest(req) {
     confirmText: "Borrar",
     action: () => deleteMyRequest(req),
   };
+}
+
+function openConfirmDeleteLeague() {
+  const name = league.value?.name ? `“${league.value.name}”` : "esta liga";
+  confirm.value = {
+    open: true,
+    variant: "danger",
+    title: "Borrar liga",
+    subtitle: "Esta acción no se puede deshacer.",
+    body: `¿Seguro que quieres borrar ${name}?`,
+    confirmText: "Borrar liga",
+    action: deleteLeagueNow,
+  };
+}
+
+async function deleteLeagueNow() {
+  if (deleteBusy.value) return;
+  deleteBusy.value = true;
+  try {
+    await deleteLeagueFirestore(props.leagueId);
+    toast.success("Liga borrada");
+    emit("back");
+  } catch (e) {
+    toast.error(e?.message || "No se pudo borrar la liga");
+  } finally {
+    deleteBusy.value = false;
+  }
 }
 
 // Evita scroll del fondo y “saltos” raros al abrir/cerrar el modal.

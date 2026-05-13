@@ -30,8 +30,9 @@ import ToastHost from "./components/ToastHost.vue";
 const step = ref("login");
 const needsEmailVerification = ref(false);
 const previousStep = ref("home");
-const joinInitialCode = ref("");
 const activeLeagueId = ref("");
+
+const pendingJoinLeagueId = ref("");
 
 const authRedirectFinishing = ref(false);
 
@@ -55,6 +56,58 @@ watch(
   },
   { immediate: true },
 );
+
+function setPendingJoinLeagueId(id) {
+  pendingJoinLeagueId.value = id ? String(id) : "";
+  try {
+    if (pendingJoinLeagueId.value) {
+      sessionStorage.setItem(
+        "sportclash:pendingJoinLeagueId",
+        pendingJoinLeagueId.value,
+      );
+    } else {
+      sessionStorage.removeItem("sportclash:pendingJoinLeagueId");
+    }
+  } catch {
+    // ignore
+  }
+}
+
+function hydratePendingJoinLeagueId() {
+  if (pendingJoinLeagueId.value) return;
+  try {
+    const v = sessionStorage.getItem("sportclash:pendingJoinLeagueId") || "";
+    if (v) pendingJoinLeagueId.value = v;
+  } catch {
+    // ignore
+  }
+}
+
+function consumeJoinParamFromUrl() {
+  try {
+    const url = new URL(window.location.href);
+    const join = url.searchParams.get("join");
+    if (!join) return;
+
+    setPendingJoinLeagueId(join);
+
+    // Limpiamos la URL para que no re-navegue en cada refresh.
+    url.searchParams.delete("join");
+    window.history.replaceState({}, "", url.toString());
+  } catch {
+    // ignore
+  }
+}
+
+function openPendingJoinIfReady() {
+  if (!pendingJoinLeagueId.value) return;
+  if (step.value !== "home") return;
+
+  previousStep.value = "home";
+  activeLeagueId.value = pendingJoinLeagueId.value;
+  setPendingJoinLeagueId("");
+  step.value = "leagueDetail";
+}
 
 async function hasCompletedProfile(user) {
   if (!user?.uid) return false;
@@ -137,6 +190,9 @@ async function markProfileCompleted(user) {
 
 onMounted(() => {
   log("App", "mounted", { url: window.location.href });
+
+  consumeJoinParamFromUrl();
+  hydratePendingJoinLeagueId();
 
   // Si venimos de un login social con redirect, consumimos el resultado aquí (solo 1 vez).
   // Esto sirve para:
@@ -226,7 +282,12 @@ onMounted(() => {
     // Completar datos solo la primera vez.
     const completed = await hasCompletedProfile(user);
     step.value = completed ? "home" : "complete";
+    if (completed) openPendingJoinIfReady();
   });
+});
+
+watch(step, (to) => {
+  if (to === "home") openPendingJoinIfReady();
 });
 
 function goLogin() {
@@ -274,8 +335,12 @@ function goCreateLeague() {
 
 function goJoinLeague(leagueId) {
   previousStep.value = step.value;
-  joinInitialCode.value = leagueId ? String(leagueId) : "";
-  step.value = "joinLeague";
+  if (!leagueId) {
+    step.value = "global";
+    return;
+  }
+  activeLeagueId.value = String(leagueId);
+  step.value = "leagueDetail";
 }
 
 function goOpenLeague(league) {
