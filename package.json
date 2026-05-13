@@ -7,10 +7,12 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test:rules": "npx --no-install firebase emulators:exec --config firebase.json --only firestore \"node --test tests/firestore.rules.test.mjs\""
+    "test:rules": "npx --no-install firebase emulators:exec --config firebase.json --only firestore \"node --test tests/firestore.rules.test.mjs\"",
+    "reset:leagues": "node scripts/resetLeagues.mjs"
   },
   "dependencies": {
     "firebase": "^12.12.1",
+    "firebase-admin": "^13.5.0",
     "vue": "^3.5.32"
   },
   "devDependencies": {
