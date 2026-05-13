@@ -216,8 +216,10 @@ service cloud.firestore {
     match /leagueJoinRequests/{reqId} {
 
       // Get: el solicitante ve la suya, y owner/admin ven todas
-      allow get: if signedIn() && resource != null && (
-        resource.data.uid == uid() || isAdminLike(resource.data.leagueId)
+      allow get: if signedIn() && (
+        (resource != null && (resource.data.uid == uid() || isAdminLike(resource.data.leagueId)))
+        // Permite leer la propia request aunque no exista (evita PERMISSION_DENIED en el pre-read).
+        || reqId.matches('^.+_' + uid() + '$')
       );
 
       // List: sólo owner/admin (moderación)

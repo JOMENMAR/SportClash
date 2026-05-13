@@ -22,7 +22,7 @@ import {
 } from "firebase/firestore";
 
 const PROJECT_ID = "demo-sportclash";
-const FIRESTORE_PORT = 8082;
+const FIRESTORE_PORT = 8090;
 
 let testEnv;
 
@@ -221,6 +221,15 @@ test("Members: user can get their own membership doc even if missing", async () 
   const userDb = testEnv.authenticatedContext("u2").firestore();
   const snap = await assertSucceeds(
     getDoc(doc(userDb, "leagueMembers", "L1_u2")),
+  );
+  assert.equal(snap.exists(), false);
+});
+test("JoinRequests: user can get their own request doc even if missing", async () => {
+  await seedLeague({ leagueId: "L1", ownerUid: "alice" });
+
+  const userDb = testEnv.authenticatedContext("u2").firestore();
+  const snap = await assertSucceeds(
+    getDoc(doc(userDb, "leagueJoinRequests", "L1_u2")),
   );
   assert.equal(snap.exists(), false);
 });
