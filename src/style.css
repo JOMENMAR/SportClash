@@ -6,9 +6,6 @@
 
 /* Reutilizable: fondo animado (usado en Login/Register/Verify) */
 .animated-gradient-bg {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
   background: linear-gradient(
     120deg,
     #0f172a,

@@ -1,6 +1,6 @@
 <template>
   <div
-    class="relative grid min-h-[100dvh] w-full place-items-center overflow-y-auto overflow-x-hidden px-4 py-10 text-white animated-gradient-bg"
+    class="relative grid min-h-[100dvh] w-full place-items-center overflow-y-auto overflow-x-hidden px-4 py-10 text-white"
   >
     <!-- Fondo animado -->
     <div
