@@ -40,7 +40,7 @@
               >
                 Pública
                 <div class="mt-1 text-xs font-normal opacity-80">
-                  Aparece en “Explorar”.
+                  Visible para todos.
                 </div>
               </button>
 
@@ -120,7 +120,7 @@ const store = useLeaguesStore();
 
 const name = ref("");
 const visibility = ref("public");
-const dailyPointsLimit = ref(5);
+const dailyPointsLimit = ref(2);
 
 const busy = ref(false);
 const error = ref("");
