@@ -194,19 +194,39 @@
             <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
               <div class="rounded-xl border border-white/10 bg-black/20 p-3">
                 <div class="text-xs text-white/60">Puntos (mes)</div>
-                <div class="mt-1 text-lg font-bold text-white/80" title="Próximamente">—</div>
+                <div
+                  class="mt-1 text-lg font-bold text-white/80"
+                  title="Próximamente"
+                >
+                  —
+                </div>
               </div>
               <div class="rounded-xl border border-white/10 bg-black/20 p-3">
                 <div class="text-xs text-white/60">Posición</div>
-                <div class="mt-1 text-lg font-bold text-white/80" title="Próximamente">—</div>
+                <div
+                  class="mt-1 text-lg font-bold text-white/80"
+                  title="Próximamente"
+                >
+                  —
+                </div>
               </div>
               <div class="rounded-xl border border-white/10 bg-black/20 p-3">
                 <div class="text-xs text-white/60">Victorias</div>
-                <div class="mt-1 text-lg font-bold text-white/80" title="Próximamente">—</div>
+                <div
+                  class="mt-1 text-lg font-bold text-white/80"
+                  title="Próximamente"
+                >
+                  —
+                </div>
               </div>
               <div class="rounded-xl border border-white/10 bg-black/20 p-3">
                 <div class="text-xs text-white/60">Racha</div>
-                <div class="mt-1 text-lg font-bold text-white/80" title="Próximamente">—</div>
+                <div
+                  class="mt-1 text-lg font-bold text-white/80"
+                  title="Próximamente"
+                >
+                  —
+                </div>
               </div>
             </div>
           </div>
@@ -228,14 +248,16 @@
                   trampas.
                 </li>
                 <li>
-                  Al final del mes, gana quien más puntos tenga (y se guardan tus
-                  stats).
+                  Al final del mes, gana quien más puntos tenga (y se guardan
+                  tus stats).
                 </li>
               </ul>
             </details>
 
             <template v-else>
-              <div class="text-sm font-semibold text-white">¿Cómo funciona?</div>
+              <div class="text-sm font-semibold text-white">
+                ¿Cómo funciona?
+              </div>
               <ul class="mt-2 space-y-1 text-sm text-white/70 list-disc pl-5">
                 <li>
                   Dentro de tu liga, registras un <strong>punto</strong> cuando
@@ -246,8 +268,8 @@
                   trampas.
                 </li>
                 <li>
-                  Al final del mes, gana quien más puntos tenga (y se guardan tus
-                  stats).
+                  Al final del mes, gana quien más puntos tenga (y se guardan
+                  tus stats).
                 </li>
               </ul>
             </template>
@@ -268,19 +290,39 @@
           <div class="mt-4 grid grid-cols-1 gap-3">
             <div class="rounded-2xl border border-white/10 bg-black/20 p-4">
               <div class="text-xs text-white/60">Récord de puntos (mes)</div>
-              <div class="mt-1 text-2xl font-bold text-white/80" title="Próximamente">—</div>
+              <div
+                class="mt-1 text-2xl font-bold text-white/80"
+                title="Próximamente"
+              >
+                —
+              </div>
             </div>
             <div class="rounded-2xl border border-white/10 bg-black/20 p-4">
               <div class="text-xs text-white/60">Victorias totales</div>
-              <div class="mt-1 text-2xl font-bold text-white/80" title="Próximamente">—</div>
+              <div
+                class="mt-1 text-2xl font-bold text-white/80"
+                title="Próximamente"
+              >
+                —
+              </div>
             </div>
             <div class="rounded-2xl border border-white/10 bg-black/20 p-4">
               <div class="text-xs text-white/60">Mejor racha</div>
-              <div class="mt-1 text-2xl font-bold text-white/80" title="Próximamente">—</div>
+              <div
+                class="mt-1 text-2xl font-bold text-white/80"
+                title="Próximamente"
+              >
+                —
+              </div>
             </div>
             <div class="rounded-2xl border border-white/10 bg-black/20 p-4">
               <div class="text-xs text-white/60">Puntos totales</div>
-              <div class="mt-1 text-2xl font-bold text-white/80" title="Próximamente">—</div>
+              <div
+                class="mt-1 text-2xl font-bold text-white/80"
+                title="Próximamente"
+              >
+                —
+              </div>
             </div>
           </div>
 
