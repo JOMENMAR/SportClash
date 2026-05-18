@@ -61,23 +61,35 @@
             <div class="flex items-end justify-between gap-4">
               <div>
                 <h2 class="text-lg font-bold tracking-tight text-white">
-                  Mis ligas
+                  {{ props.initialTab === "public" ? "Ligas públicas" : "Mis ligas" }}
                 </h2>
                 <p class="mt-0.5 text-sm text-white/60">
-                  Aquí salen tus ligas privadas y públicas.
+                  {{
+                    props.initialTab === "public"
+                      ? "Aquí salen tus ligas públicas."
+                      : "Aquí salen tus ligas privadas y públicas."
+                  }}
                 </p>
               </div>
             </div>
 
             <div
-              v-if="myLeagues.length === 0"
+              v-if="visibleLeagues.length === 0"
               class="p-4 mt-4 border rounded-2xl border-white/10 bg-black/20"
             >
               <div class="text-sm font-semibold text-white">
-                Aún no estás en ninguna liga
+                {{
+                  props.initialTab === "public"
+                    ? "Aún no estás en ninguna liga pública"
+                    : "Aún no estás en ninguna liga"
+                }}
               </div>
               <div class="mt-1 text-sm text-white/60">
-                Empieza creando una liga con tus colegas.
+                {{
+                  props.initialTab === "public"
+                    ? "Cuando te unas o crees una liga pública, aparecerá aquí."
+                    : "Empieza creando una liga con tus colegas."
+                }}
               </div>
               <div class="mt-3">
                 <button
@@ -92,7 +104,7 @@
 
             <div v-else class="grid grid-cols-1 gap-3 mt-4 sm:grid-cols-2">
               <article
-                v-for="league in myLeagues"
+                v-for="league in visibleLeagues"
                 :key="league.id"
                 class="p-4 border rounded-2xl border-white/10 bg-black/20"
               >
@@ -144,7 +156,7 @@ import BasePage from "./BasePage.vue";
 
 defineEmits(["back", "create", "join", "open"]);
 
-defineProps({
+const props = defineProps({
   initialTab: {
     type: String,
     default: "my", // 'my' | 'public'
@@ -161,4 +173,11 @@ onMounted(() => {
 });
 
 const myLeagues = computed(() => store.state.myLeagues);
+
+const visibleLeagues = computed(() => {
+  if (props.initialTab === "public") {
+    return (myLeagues.value || []).filter((l) => l?.visibility === "public");
+  }
+  return myLeagues.value || [];
+});
 </script>
