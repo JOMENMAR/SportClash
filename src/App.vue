@@ -437,7 +437,7 @@ function navActive() {
     <main :class="['flex-1', showsChrome ? 'sc-screen' : '']">
       <div
         v-if="authRedirectFinishing"
-        class="min-h-[60dvh] grid place-items-center px-4"
+        class="min-h-[100dvh] grid place-items-center px-4"
       >
         <div
           class="w-full max-w-md p-6 text-white border rounded-2xl border-white/10 bg-gray-950/60 ring-1 ring-white/5 backdrop-blur-xl"
@@ -452,7 +452,7 @@ function navActive() {
 
       <div
         v-else-if="appBooting"
-        class="min-h-[60dvh] grid place-items-center px-4"
+        class="min-h-[100dvh] grid place-items-center px-4"
       >
         <div
           class="w-full max-w-md p-6 text-white border rounded-2xl border-white/10 bg-gray-950/60 ring-1 ring-white/5 backdrop-blur-xl"
@@ -462,7 +462,7 @@ function navActive() {
         </div>
       </div>
 
-      <Login v-if="step === 'login'" @register="goRegister" />
+      <Login v-else-if="step === 'login'" @register="goRegister" />
       <Register
         v-else-if="step === 'register'"
         @registered="goVerify"
