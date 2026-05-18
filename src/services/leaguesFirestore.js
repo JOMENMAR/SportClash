@@ -376,11 +376,22 @@ export async function decideJoinRequestFirestore({
   const leagueRef = doc(db, "leagues", String(leagueId));
 
   await runTransaction(db, async (tx) => {
-    const [reqSnap, leagueSnap, memberSnap] = await Promise.all([
+    const [reqSnap, leagueSnap] = await Promise.all([
       tx.get(joinReqRef),
       tx.get(leagueRef),
-      tx.get(memberRef),
     ]);
+
+    // Importante:
+    // Si el membership del solicitante aún no existe, nuestras rules pueden
+    // denegar el get (no hacemos pre-check de docs inexistentes ajenos).
+    // En ese caso lo tratamos como "no existe" para poder aprobar creando el doc.
+    let memberSnap = null;
+    try {
+      memberSnap = await tx.get(memberRef);
+    } catch (e) {
+      if (String(e?.code || "") !== "permission-denied") throw e;
+      memberSnap = { exists: () => false, data: () => null };
+    }
 
     if (!reqSnap.exists()) throw new Error("Solicitud no encontrada");
     const req = reqSnap.data();
