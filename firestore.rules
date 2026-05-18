@@ -217,7 +217,12 @@ service cloud.firestore {
       // - get: miembros de la liga, y además el usuario puede leer SU propio doc
       //        aunque no exista (para que el frontend pueda comprobar membership
       //        sin PERMISSION_DENIED).
-      allow list: if signedIn() && resource != null && isMember(resource.data.leagueId);
+      allow list: if signedIn() && resource != null && (
+        // Permite listar tus propios memberships (query where uid == request.auth.uid)
+        resource.data.uid == uid()
+        // Permite listar miembros de una liga si ya eres miembro
+        || isMember(resource.data.leagueId)
+      );
 
       allow get: if signedIn() && (
         (resource != null && isMember(resource.data.leagueId))
