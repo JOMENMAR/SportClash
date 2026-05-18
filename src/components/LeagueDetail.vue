@@ -1000,7 +1000,7 @@ import {
   formatUidShort,
 } from "../services/userProfiles";
 
-const emit = defineEmits(["back"]);
+const emit = defineEmits(["back", "league-loaded"]);
 
 const props = defineProps({
   leagueId: {
@@ -1058,6 +1058,20 @@ const myReqBusyId = ref("");
 const myEditNote = ref({});
 
 const rejectDraft = ref({});
+
+const lastEmittedLeagueName = ref("");
+
+watch(
+  league,
+  (l) => {
+    const name = l?.name ? String(l.name) : "";
+    if (!name) return;
+    if (lastEmittedLeagueName.value === name) return;
+    lastEmittedLeagueName.value = name;
+    emit("league-loaded", { id: props.leagueId, name });
+  },
+  { immediate: true },
+);
 
 const showRejectedModal = ref(false);
 

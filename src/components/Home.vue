@@ -70,101 +70,113 @@
           </div>
 
           <div class="p-4 mt-4 border rounded-2xl border-white/10 bg-black/20">
-            <div
-              class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
-            >
-              <div v-if="leaguesLoading" class="flex items-start gap-3">
-                <div
-                  class="mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-300/15 ring-1 ring-emerald-200/20"
-                  aria-hidden
-                />
-
-                <div class="flex-1 min-w-0">
-                  <div class="w-24 h-3 rounded bg-white/10" />
-                  <div class="mt-2 h-4 w-64 max-w-[85%] rounded bg-white/10" />
-                  <div class="flex flex-wrap gap-2 mt-3">
-                    <div class="w-20 h-6 rounded-lg bg-white/10" />
-                    <div class="h-6 rounded-lg w-28 bg-white/10" />
-                  </div>
-                </div>
-              </div>
-
-              <div v-else-if="recentLeague" class="flex items-start gap-3">
-                <div
-                  class="mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-300/15 ring-1 ring-emerald-200/20"
-                  aria-hidden
-                >
-                  <span class="text-emerald-200" v-html="iconSvg('leagues')" />
-                </div>
-
-                <div class="min-w-0">
-                  <div class="flex flex-wrap items-center gap-2">
-                    <span class="text-xs text-white/60">
-                      {{
-                        recentLeague.visibility === "public"
-                          ? "Pública"
-                          : "Privada"
-                      }}
-                    </span>
-
-                    <span
-                      v-if="recentLeague.role"
-                      class="inline-flex items-center rounded-lg bg-emerald-300/15 px-2 py-1 text-[11px] font-semibold text-emerald-100 ring-1 ring-emerald-200/20"
-                      :title="`Tu rol: ${recentLeague.role}`"
-                    >
-                      {{ recentLeague.role }}
-                    </span>
-                  </div>
+            <div class="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-start">
+              <div>
+                <div v-if="leaguesLoading" class="flex items-start gap-3">
                   <div
-                    class="mt-1 text-base font-semibold text-white truncate"
-                    :title="recentLeague.name"
+                    class="mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-300/15 ring-1 ring-emerald-200/20"
+                    aria-hidden
+                  />
+
+                  <div class="flex-1 min-w-0">
+                    <div class="w-24 h-3 rounded bg-white/10" />
+                    <div
+                      class="mt-2 h-4 w-64 max-w-[85%] rounded bg-white/10"
+                    />
+                    <div class="flex flex-wrap gap-2 mt-3">
+                      <div class="w-20 h-6 rounded-lg bg-white/10" />
+                      <div class="h-6 rounded-lg w-28 bg-white/10" />
+                    </div>
+                  </div>
+                </div>
+
+                <div v-else-if="recentLeague" class="flex items-start gap-3">
+                  <div
+                    class="mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-300/15 ring-1 ring-emerald-200/20"
+                    aria-hidden
                   >
-                    {{ recentLeague.name }}
+                    <span
+                      class="text-emerald-200"
+                      v-html="iconSvg('leagues')"
+                    />
                   </div>
-                  <div class="flex flex-wrap gap-2 mt-2">
-                    <span
-                      class="inline-flex items-center gap-1 rounded-lg bg-white/10 px-2 py-1 text-[11px] font-semibold text-white ring-1 ring-white/10"
-                      title="Límite diario"
-                    >
-                      <span class="text-white/70">Límite</span>
-                      <span class="text-white">{{
-                        recentLeague.dailyPointsLimit
-                      }}</span>
-                      <span class="text-white/70">pts</span>
-                    </span>
 
-                    <span
-                      class="inline-flex items-center rounded-lg bg-black/20 px-2 py-1 text-[11px] font-semibold text-white/80 ring-1 ring-white/10"
-                      title="Regla"
+                  <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-2">
+                      <span class="text-xs text-white/60">
+                        {{
+                          recentLeague.visibility === "public"
+                            ? "Pública"
+                            : "Privada"
+                        }}
+                      </span>
+
+                      <span
+                        v-if="recentLeague.role"
+                        class="inline-flex items-center rounded-lg bg-emerald-300/15 px-2 py-1 text-[11px] font-semibold text-emerald-100 ring-1 ring-emerald-200/20"
+                        :title="`Tu rol: ${recentLeague.role}`"
+                      >
+                        {{ recentLeague.role }}
+                      </span>
+                    </div>
+
+                    <div
+                      class="mt-1 text-base font-semibold text-white truncate"
+                      :title="recentLeague.name"
                     >
-                      diario por usuario
-                    </span>
+                      {{ recentLeague.name }}
+                    </div>
+
+                    <div class="flex flex-wrap gap-2 mt-2">
+                      <span
+                        class="inline-flex items-center gap-1 rounded-lg bg-white/10 px-2 py-1 text-[11px] font-semibold text-white ring-1 ring-white/10"
+                        title="Límite diario"
+                      >
+                        <span class="text-white/70">Límite</span>
+                        <span class="text-white">{{
+                          recentLeague.dailyPointsLimit
+                        }}</span>
+                        <span class="text-white/70">pts</span>
+                      </span>
+
+                      <span
+                        class="inline-flex items-center rounded-lg bg-black/20 px-2 py-1 text-[11px] font-semibold text-white/80 ring-1 ring-white/10"
+                        title="Regla"
+                      >
+                        diario por usuario
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div v-else class="flex items-start gap-3">
+                  <div
+                    class="mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-300/15 ring-1 ring-emerald-200/20"
+                    aria-hidden
+                  >
+                    <span
+                      class="text-emerald-200"
+                      v-html="iconSvg('leagues')"
+                    />
+                  </div>
+
+                  <div>
+                    <div class="text-base font-semibold text-white">
+                      Aún no estás en ninguna liga
+                    </div>
+                    <div class="mt-1 text-sm text-white/60">
+                      Crea una con tu gente o explora ligas públicas.
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div v-else class="flex items-start gap-3">
-                <div
-                  class="mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-300/15 ring-1 ring-emerald-200/20"
-                  aria-hidden
-                >
-                  <span class="text-emerald-200" v-html="iconSvg('leagues')" />
-                </div>
-
-                <div>
-                  <div class="text-base font-semibold text-white">
-                    Aún no estás en ninguna liga
-                  </div>
-                  <div class="mt-1 text-sm text-white/60">
-                    Crea una con tu gente o explora ligas públicas.
-                  </div>
-                </div>
-              </div>
-
-              <div class="flex gap-2">
+              <div
+                class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end"
+              >
                 <button
                   type="button"
-                  class="inline-flex items-center gap-2 rounded-xl bg-emerald-300 px-4 py-2 text-sm font-semibold text-gray-950 ring-1 ring-emerald-200/30 hover:opacity-95 transition active:scale-[0.98]"
+                  class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-300 px-4 py-2 text-sm font-semibold text-gray-950 ring-1 ring-emerald-200/30 hover:opacity-95 transition active:scale-[0.98]"
                   :disabled="leaguesLoading"
                   @click="
                     recentLeague
@@ -177,7 +189,7 @@
                 </button>
                 <button
                   type="button"
-                  class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white transition rounded-xl bg-white/10 ring-1 ring-white/10 hover:bg-white/15"
+                  class="inline-flex items-center justify-center w-full gap-2 px-4 py-2 text-sm font-semibold text-white transition sm:w-auto rounded-xl bg-white/10 ring-1 ring-white/10 hover:bg-white/15"
                   :disabled="leaguesLoading"
                   @click="
                     recentLeague

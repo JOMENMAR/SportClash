@@ -58,6 +58,17 @@
         </button>
       </nav>
 
+      <div
+        v-if="leagueName"
+        class="hidden sm:flex items-center gap-2 px-3 py-2 ml-1 rounded-xl bg-black/20 ring-1 ring-white/10 max-w-[16rem]"
+        :title="leagueName"
+      >
+        <span class="text-xs font-semibold text-white/50">Liga</span>
+        <span class="text-sm font-semibold text-white truncate">{{
+          leagueName
+        }}</span>
+      </div>
+
       <div class="grow" />
 
       <div class="flex items-center gap-2">
@@ -111,6 +122,10 @@ defineProps({
   active: {
     type: String,
     default: "home",
+  },
+  leagueName: {
+    type: String,
+    default: "",
   },
 });
 

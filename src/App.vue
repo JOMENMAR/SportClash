@@ -32,6 +32,7 @@ const needsEmailVerification = ref(false);
 const previousStep = ref("home");
 const activeLeagueId = ref("");
 const activeLeagueInitialTab = ref("");
+const activeLeagueName = ref("");
 
 const pendingJoinLeagueId = ref("");
 
@@ -114,6 +115,7 @@ function openPendingJoinIfReady() {
   previousStep.value = "home";
   activeLeagueId.value = pendingJoinLeagueId.value;
   activeLeagueInitialTab.value = "";
+  activeLeagueName.value = "";
   setPendingJoinLeagueId("");
   step.value = "leagueDetail";
 }
@@ -351,6 +353,7 @@ function goLeagueDetail(leagueId, initialTab) {
   previousStep.value = step.value;
   activeLeagueId.value = leagueId ? String(leagueId) : "";
   activeLeagueInitialTab.value = initialTab ? String(initialTab) : "";
+  activeLeagueName.value = "";
   step.value = activeLeagueId.value ? "leagueDetail" : "myLeagues";
 }
 
@@ -367,6 +370,7 @@ function goJoinLeague(leagueId) {
   }
   activeLeagueId.value = String(leagueId);
   activeLeagueInitialTab.value = "";
+  activeLeagueName.value = "";
   step.value = "leagueDetail";
 }
 
@@ -374,7 +378,13 @@ function goOpenLeague(league) {
   previousStep.value = step.value;
   activeLeagueId.value = league?.id ? String(league.id) : "";
   activeLeagueInitialTab.value = "";
+  activeLeagueName.value = league?.name ? String(league.name) : "";
   step.value = "leagueDetail";
+}
+
+function onLeagueLoaded(payload) {
+  const name = payload?.name ? String(payload.name) : "";
+  if (name) activeLeagueName.value = name;
 }
 
 function goBack() {
@@ -401,6 +411,7 @@ function navActive() {
     <TopNav
       v-if="showsChrome"
       :active="navActive()"
+      :leagueName="step === 'leagueDetail' ? activeLeagueName : ''"
       @go-home="goHome"
       @go-my-leagues="goMyLeagues"
       @go-global="goGlobal"
@@ -496,6 +507,7 @@ function navActive() {
         :leagueId="activeLeagueId"
         :initialTab="activeLeagueInitialTab"
         @back="goBack"
+        @league-loaded="onLeagueLoaded"
       />
       <Profile v-else-if="step === 'profile'" @back="goBack" @logout="logout" />
       <Home
