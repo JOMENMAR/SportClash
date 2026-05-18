@@ -237,14 +237,14 @@ service cloud.firestore {
           (
             request.resource.data.uid == uid()
             && request.resource.data.role == 'owner'
-            && leagueExists(request.resource.data.leagueId)
-            && get(leagueRef(request.resource.data.leagueId)).data.createdBy == uid()
+            && existsAfter(leagueRef(request.resource.data.leagueId))
+            && getAfter(leagueRef(request.resource.data.leagueId)).data.createdBy == uid()
           )
           ||
           (
             isAdminLike(request.resource.data.leagueId)
             && request.resource.data.role == 'member'
-            && leagueExists(request.resource.data.leagueId)
+            && existsAfter(leagueRef(request.resource.data.leagueId))
           )
         );
 
