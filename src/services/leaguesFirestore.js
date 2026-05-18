@@ -369,6 +369,19 @@ export async function decideJoinRequestFirestore({
     throw new Error("Estado inválido");
   }
 
+  // Pre-check fuera de la transacción:
+  // En rules reales, leer un membership AJENO inexistente por ID puede dar PERMISSION_DENIED.
+  // Para decidir si hay que crear el membership, usamos query (permitida a miembros de la liga).
+  const existingMemberSnap = await getDocs(
+    query(
+      collection(db, "leagueMembers"),
+      where("leagueId", "==", String(leagueId)),
+      where("uid", "==", String(requestUid)),
+      limit(1),
+    ),
+  );
+  const memberAlreadyExists = !existingMemberSnap.empty;
+
   const joinReqId = `${leagueId}_${requestUid}`;
   const joinReqRef = doc(db, "leagueJoinRequests", joinReqId);
   const memberId = `${leagueId}_${requestUid}`;
@@ -381,18 +394,6 @@ export async function decideJoinRequestFirestore({
       tx.get(leagueRef),
     ]);
 
-    // Importante:
-    // Si el membership del solicitante aún no existe, nuestras rules pueden
-    // denegar el get (no hacemos pre-check de docs inexistentes ajenos).
-    // En ese caso lo tratamos como "no existe" para poder aprobar creando el doc.
-    let memberSnap = null;
-    try {
-      memberSnap = await tx.get(memberRef);
-    } catch (e) {
-      if (String(e?.code || "") !== "permission-denied") throw e;
-      memberSnap = { exists: () => false, data: () => null };
-    }
-
     if (!reqSnap.exists()) throw new Error("Solicitud no encontrada");
     const req = reqSnap.data();
     if (req.status !== "pending") {
@@ -401,17 +402,7 @@ export async function decideJoinRequestFirestore({
 
     if (!leagueSnap.exists()) throw new Error("Liga no encontrada");
 
-    // Si ya es miembro, marcamos la request como approved y listo.
-    if (memberSnap.exists()) {
-      tx.update(joinReqRef, {
-        status: "approved",
-        decidedAt: serverTimestamp(),
-        decidedBy: user.uid,
-      });
-      return;
-    }
-
-    if (status === "approved") {
+    if (status === "approved" && !memberAlreadyExists) {
       tx.set(memberRef, {
         leagueId: String(leagueId),
         uid: String(requestUid),
