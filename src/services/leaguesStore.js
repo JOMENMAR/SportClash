@@ -3,7 +3,6 @@ import { log, warn, error as logError, group, groupEnd } from "./logger";
 import {
   createLeagueFirestore,
   fetchMyLeaguesFirestore,
-  fetchPublicLeaguesFirestore,
 } from "./leaguesFirestore";
 
 /**
@@ -14,7 +13,6 @@ import {
  */
 const state = reactive({
   myLeagues: [],
-  publicLeagues: [],
   loaded: false,
   loading: false,
   error: "",
@@ -25,22 +23,15 @@ async function refresh() {
   state.error = "";
   state.loading = true;
   try {
-    log("LeaguesStore", "refresh: fetching mine + public");
-    const [mine, pubs] = await Promise.all([
-      fetchMyLeaguesFirestore(),
-      fetchPublicLeaguesFirestore(),
-    ]);
+    log("LeaguesStore", "refresh: fetching mine");
+    const mine = await fetchMyLeaguesFirestore();
     // Orden simple: más nuevas primero (si createdAt es string/ts)
     state.myLeagues = [...mine].sort((a, b) =>
-      String(b.createdAt || "").localeCompare(String(a.createdAt || "")),
-    );
-    state.publicLeagues = [...pubs].sort((a, b) =>
       String(b.createdAt || "").localeCompare(String(a.createdAt || "")),
     );
     state.loaded = true;
     log("LeaguesStore", "refresh: done", {
       myLeagues: state.myLeagues.length,
-      publicLeagues: state.publicLeagues.length,
     });
   } catch (e) {
     logError("LeaguesStore", "refresh: failed", e);
