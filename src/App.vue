@@ -345,6 +345,12 @@ function goGlobal() {
   step.value = "global";
 }
 
+function goLeagueDetail(leagueId) {
+  previousStep.value = step.value;
+  activeLeagueId.value = leagueId ? String(leagueId) : "";
+  step.value = activeLeagueId.value ? "leagueDetail" : "myLeagues";
+}
+
 function goCreateLeague() {
   previousStep.value = step.value;
   step.value = "createLeague";
@@ -450,6 +456,8 @@ function navActive() {
         @create-league="goCreateLeague"
         @join-league="goJoinLeague"
         @open-leagues="goMyLeagues"
+        @open-global="goGlobal"
+        @open-league="goLeagueDetail"
         @open-history="() => {}"
       />
       <Leagues
@@ -489,6 +497,8 @@ function navActive() {
         @create-league="goCreateLeague"
         @join-league="goJoinLeague"
         @open-leagues="goMyLeagues"
+        @open-global="goGlobal"
+        @open-league="goLeagueDetail"
         @open-history="() => {}"
       />
     </main>

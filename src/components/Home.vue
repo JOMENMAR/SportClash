@@ -151,20 +151,20 @@
                   class="inline-flex items-center gap-2 rounded-xl bg-emerald-300 px-4 py-2 text-sm font-semibold text-gray-950 ring-1 ring-emerald-200/30 hover:opacity-95 transition active:scale-[0.98]"
                   @click="
                     recentLeague
-                      ? $emit('open-leagues')
+                      ? $emit('open-league', recentLeague.id)
                       : $emit('create-league')
                   "
                 >
-                  <span v-html="iconSvg('plus')" />
-                  {{ recentLeague ? "Abrir ligas" : "Crear liga" }}
+                  <span v-html="iconSvg(recentLeague ? 'leagues' : 'plus')" />
+                  {{ recentLeague ? "Entrar a la liga" : "Crear liga" }}
                 </button>
                 <button
                   type="button"
                   class="inline-flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2 text-sm font-semibold text-white ring-1 ring-white/10 hover:bg-white/15 transition"
-                  @click="$emit('open-leagues')"
+                  @click="recentLeague ? $emit('open-leagues') : $emit('open-global')"
                 >
                   <span v-html="iconSvg('link')" />
-                  {{ recentLeague ? "Ver ligas" : "Solicitar unirme" }}
+                  {{ recentLeague ? "Cambiar liga" : "Explorar ligas" }}
                 </button>
               </div>
             </div>
@@ -321,7 +321,14 @@ import {
   formatUidShort,
 } from "../services/userProfiles";
 
-defineEmits(["create-league", "join-league", "open-leagues", "open-history"]);
+defineEmits([
+  "create-league",
+  "join-league",
+  "open-leagues",
+  "open-global",
+  "open-league",
+  "open-history",
+]);
 
 const store = useLeaguesStore();
 
