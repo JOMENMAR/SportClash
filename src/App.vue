@@ -36,6 +36,11 @@ const pendingJoinLeagueId = ref("");
 
 const authRedirectFinishing = ref(false);
 
+// Evita el flash del login al refrescar: esperamos al primer onAuthStateChanged
+// y, si hay usuario, a la comprobación de perfil.
+const appBooting = ref(true);
+const appBootMessage = ref("Cargando…");
+
 const chromeSteps = [
   "home",
   "leagues",
@@ -47,7 +52,9 @@ const chromeSteps = [
   "profile",
 ];
 
-const showsChrome = computed(() => chromeSteps.includes(step.value));
+const showsChrome = computed(
+  () => !appBooting.value && chromeSteps.includes(step.value),
+);
 
 watch(
   step,
@@ -266,23 +273,33 @@ onMounted(() => {
         .filter(Boolean),
     });
 
+    appBooting.value = true;
+    appBootMessage.value = "Cargando…";
+
     if (!user) {
       step.value = "login";
       needsEmailVerification.value = false;
+      appBooting.value = false;
       return;
     }
     // La verificación la mostramos solo si venimos de Register.
     if (needsEmailVerification.value) {
       if (!user.emailVerified) {
         step.value = "verify";
+        appBooting.value = false;
         return;
       }
       needsEmailVerification.value = false;
     }
     // Completar datos solo la primera vez.
-    const completed = await hasCompletedProfile(user);
-    step.value = completed ? "home" : "complete";
-    if (completed) openPendingJoinIfReady();
+    try {
+      appBootMessage.value = "Preparando tu sesión…";
+      const completed = await hasCompletedProfile(user);
+      step.value = completed ? "home" : "complete";
+      if (completed) openPendingJoinIfReady();
+    } finally {
+      appBooting.value = false;
+    }
   });
 });
 
@@ -398,6 +415,18 @@ function navActive() {
             Si tarda mucho, revisa la consola (F12) para ver el error del
             redirect.
           </div>
+        </div>
+      </div>
+
+      <div
+        v-else-if="appBooting"
+        class="min-h-[60dvh] grid place-items-center px-4"
+      >
+        <div
+          class="w-full max-w-md p-6 text-white border rounded-2xl border-white/10 bg-gray-950/60 ring-1 ring-white/5 backdrop-blur-xl"
+        >
+          <div class="text-lg font-semibold">{{ appBootMessage }}</div>
+          <div class="mt-1 text-sm text-white/70">Un momento por favor…</div>
         </div>
       </div>
 
