@@ -37,10 +37,10 @@
           <button
             type="button"
             class="inline-flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2 text-sm font-semibold text-white ring-1 ring-white/10 hover:bg-white/15 transition"
-            @click="$emit('open-leagues')"
+            @click="$emit('open-global')"
           >
-            <span v-html="iconSvg('leagues')" />
-            Ver ligas
+            <span v-html="iconSvg('link')" />
+            Explorar ligas
           </button>
         </div>
       </header>
@@ -65,7 +65,7 @@
               class="shrink-0 rounded-xl bg-white/10 px-3 py-2 text-sm font-semibold text-white ring-1 ring-white/10 hover:bg-white/15 transition"
               @click="$emit('open-leagues')"
             >
-              Ver ligas
+              Mis ligas
             </button>
           </div>
 
@@ -73,7 +73,23 @@
             <div
               class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
             >
-              <div v-if="recentLeague" class="flex items-start gap-3">
+              <div v-if="leaguesLoading" class="flex items-start gap-3">
+                <div
+                  class="mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-300/15 ring-1 ring-emerald-200/20"
+                  aria-hidden
+                />
+
+                <div class="min-w-0 flex-1">
+                  <div class="h-3 w-24 rounded bg-white/10" />
+                  <div class="mt-2 h-4 w-64 max-w-[85%] rounded bg-white/10" />
+                  <div class="mt-3 flex flex-wrap gap-2">
+                    <div class="h-6 w-20 rounded-lg bg-white/10" />
+                    <div class="h-6 w-28 rounded-lg bg-white/10" />
+                  </div>
+                </div>
+              </div>
+
+              <div v-else-if="recentLeague" class="flex items-start gap-3">
                 <div
                   class="mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-300/15 ring-1 ring-emerald-200/20"
                   aria-hidden
@@ -149,6 +165,7 @@
                 <button
                   type="button"
                   class="inline-flex items-center gap-2 rounded-xl bg-emerald-300 px-4 py-2 text-sm font-semibold text-gray-950 ring-1 ring-emerald-200/30 hover:opacity-95 transition active:scale-[0.98]"
+                  :disabled="leaguesLoading"
                   @click="
                     recentLeague
                       ? $emit('open-league', recentLeague.id)
@@ -161,10 +178,15 @@
                 <button
                   type="button"
                   class="inline-flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2 text-sm font-semibold text-white ring-1 ring-white/10 hover:bg-white/15 transition"
-                  @click="recentLeague ? $emit('open-leagues') : $emit('open-global')"
+                  :disabled="leaguesLoading"
+                  @click="
+                    recentLeague
+                      ? $emit('open-league', recentLeague.id, 'points')
+                      : $emit('open-global')
+                  "
                 >
-                  <span v-html="iconSvg('link')" />
-                  {{ recentLeague ? "Cambiar liga" : "Explorar ligas" }}
+                  <span v-html="iconSvg(recentLeague ? 'plus' : 'link')" />
+                  {{ recentLeague ? "Registrar punto" : "Explorar ligas" }}
                 </button>
               </div>
             </div>
@@ -172,39 +194,63 @@
             <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
               <div class="rounded-xl border border-white/10 bg-black/20 p-3">
                 <div class="text-xs text-white/60">Puntos (mes)</div>
-                <div class="mt-1 text-lg font-bold">0</div>
+                <div class="mt-1 text-lg font-bold text-white/80" title="Próximamente">—</div>
               </div>
               <div class="rounded-xl border border-white/10 bg-black/20 p-3">
                 <div class="text-xs text-white/60">Posición</div>
-                <div class="mt-1 text-lg font-bold">—</div>
+                <div class="mt-1 text-lg font-bold text-white/80" title="Próximamente">—</div>
               </div>
               <div class="rounded-xl border border-white/10 bg-black/20 p-3">
                 <div class="text-xs text-white/60">Victorias</div>
-                <div class="mt-1 text-lg font-bold">0</div>
+                <div class="mt-1 text-lg font-bold text-white/80" title="Próximamente">—</div>
               </div>
               <div class="rounded-xl border border-white/10 bg-black/20 p-3">
                 <div class="text-xs text-white/60">Racha</div>
-                <div class="mt-1 text-lg font-bold">0</div>
+                <div class="mt-1 text-lg font-bold text-white/80" title="Próximamente">—</div>
               </div>
             </div>
           </div>
 
           <div class="mt-4 rounded-2xl border border-white/10 bg-black/10 p-4">
-            <div class="text-sm font-semibold text-white">¿Cómo funciona?</div>
-            <ul class="mt-2 space-y-1 text-sm text-white/70 list-disc pl-5">
-              <li>
-                Dentro de tu liga, registras un <strong>punto</strong> cuando
-                haces un deporte.
-              </li>
-              <li>
-                Los administradores lo <strong>verifican</strong> para evitar
-                trampas.
-              </li>
-              <li>
-                Al final del mes, gana quien más puntos tenga (y se guardan tus
-                stats).
-              </li>
-            </ul>
+            <details v-if="recentLeague" class="group">
+              <summary
+                class="text-sm font-semibold text-white cursor-pointer select-none"
+              >
+                ¿Cómo funciona?
+              </summary>
+              <ul class="mt-2 space-y-1 text-sm text-white/70 list-disc pl-5">
+                <li>
+                  Dentro de tu liga, registras un <strong>punto</strong> cuando
+                  haces un deporte.
+                </li>
+                <li>
+                  Los administradores lo <strong>verifican</strong> para evitar
+                  trampas.
+                </li>
+                <li>
+                  Al final del mes, gana quien más puntos tenga (y se guardan tus
+                  stats).
+                </li>
+              </ul>
+            </details>
+
+            <template v-else>
+              <div class="text-sm font-semibold text-white">¿Cómo funciona?</div>
+              <ul class="mt-2 space-y-1 text-sm text-white/70 list-disc pl-5">
+                <li>
+                  Dentro de tu liga, registras un <strong>punto</strong> cuando
+                  haces un deporte.
+                </li>
+                <li>
+                  Los administradores lo <strong>verifican</strong> para evitar
+                  trampas.
+                </li>
+                <li>
+                  Al final del mes, gana quien más puntos tenga (y se guardan tus
+                  stats).
+                </li>
+              </ul>
+            </template>
           </div>
         </section>
 
@@ -222,19 +268,19 @@
           <div class="mt-4 grid grid-cols-1 gap-3">
             <div class="rounded-2xl border border-white/10 bg-black/20 p-4">
               <div class="text-xs text-white/60">Récord de puntos (mes)</div>
-              <div class="mt-1 text-2xl font-bold">0</div>
+              <div class="mt-1 text-2xl font-bold text-white/80" title="Próximamente">—</div>
             </div>
             <div class="rounded-2xl border border-white/10 bg-black/20 p-4">
               <div class="text-xs text-white/60">Victorias totales</div>
-              <div class="mt-1 text-2xl font-bold">0</div>
+              <div class="mt-1 text-2xl font-bold text-white/80" title="Próximamente">—</div>
             </div>
             <div class="rounded-2xl border border-white/10 bg-black/20 p-4">
               <div class="text-xs text-white/60">Mejor racha</div>
-              <div class="mt-1 text-2xl font-bold">0</div>
+              <div class="mt-1 text-2xl font-bold text-white/80" title="Próximamente">—</div>
             </div>
             <div class="rounded-2xl border border-white/10 bg-black/20 p-4">
               <div class="text-xs text-white/60">Puntos totales</div>
-              <div class="mt-1 text-2xl font-bold">0</div>
+              <div class="mt-1 text-2xl font-bold text-white/80" title="Próximamente">—</div>
             </div>
           </div>
 
@@ -266,7 +312,7 @@
             <button
               type="button"
               class="shrink-0 rounded-xl bg-white/10 px-3 py-2 text-sm font-semibold text-white ring-1 ring-white/10 hover:bg-white/15 transition disabled:opacity-60"
-              :disabled="achLoading"
+              :disabled="achLoading || leaguesLoading"
               @click="loadAchievements"
             >
               {{ achLoading ? "Cargando…" : "Actualizar" }}
@@ -279,6 +325,10 @@
 
           <div v-else-if="achLoading" class="mt-3 text-sm text-white/70">
             Calculando…
+          </div>
+
+          <div v-else-if="leaguesLoading" class="mt-3 text-sm text-white/70">
+            Cargando ligas…
           </div>
 
           <div v-else-if="!activeLeagueId" class="mt-3 text-sm text-white/70">
@@ -350,6 +400,10 @@ const recentLeague = computed(() => {
   return mine[0] || null;
 });
 
+const leaguesLoading = computed(
+  () => store.state?.loading === true && store.state?.loaded !== true,
+);
+
 async function loadAchievements() {
   achError.value = "";
   achTop.value = null;
@@ -402,7 +456,6 @@ function iconSvg(name) {
 onMounted(async () => {
   // asegura que hay ligas cargadas antes de calcular
   store.seedIfEmpty();
-  store.refresh?.();
   // pequeño delay lógico: si refresh es async, esto puede correr antes;
   // aun así, el botón manual siempre lo permite.
   setTimeout(() => {

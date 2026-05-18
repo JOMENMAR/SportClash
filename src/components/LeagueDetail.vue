@@ -1007,6 +1007,14 @@ const props = defineProps({
     type: String,
     required: true,
   },
+  initialTab: {
+    type: String,
+    default: "",
+  },
+  initialPointsTab: {
+    type: String,
+    default: "",
+  },
 });
 
 const league = ref(null);
@@ -1214,8 +1222,8 @@ onBeforeUnmount(() => {
   document.body.style.overflow = "";
 });
 
-const activeTab = ref("athletes");
-const pointsTab = ref("mine");
+const activeTab = ref(props.initialTab || "athletes");
+const pointsTab = ref(props.initialPointsTab || "mine");
 
 const note = ref("");
 const performedOn = ref(new Date().toISOString().slice(0, 10));

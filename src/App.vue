@@ -31,6 +31,7 @@ const step = ref("login");
 const needsEmailVerification = ref(false);
 const previousStep = ref("home");
 const activeLeagueId = ref("");
+const activeLeagueInitialTab = ref("");
 
 const pendingJoinLeagueId = ref("");
 
@@ -112,6 +113,7 @@ function openPendingJoinIfReady() {
 
   previousStep.value = "home";
   activeLeagueId.value = pendingJoinLeagueId.value;
+  activeLeagueInitialTab.value = "";
   setPendingJoinLeagueId("");
   step.value = "leagueDetail";
 }
@@ -345,9 +347,10 @@ function goGlobal() {
   step.value = "global";
 }
 
-function goLeagueDetail(leagueId) {
+function goLeagueDetail(leagueId, initialTab) {
   previousStep.value = step.value;
   activeLeagueId.value = leagueId ? String(leagueId) : "";
+  activeLeagueInitialTab.value = initialTab ? String(initialTab) : "";
   step.value = activeLeagueId.value ? "leagueDetail" : "myLeagues";
 }
 
@@ -363,12 +366,14 @@ function goJoinLeague(leagueId) {
     return;
   }
   activeLeagueId.value = String(leagueId);
+  activeLeagueInitialTab.value = "";
   step.value = "leagueDetail";
 }
 
 function goOpenLeague(league) {
   previousStep.value = step.value;
   activeLeagueId.value = league?.id ? String(league.id) : "";
+  activeLeagueInitialTab.value = "";
   step.value = "leagueDetail";
 }
 
@@ -489,6 +494,7 @@ function navActive() {
       <LeagueDetail
         v-else-if="step === 'leagueDetail'"
         :leagueId="activeLeagueId"
+        :initialTab="activeLeagueInitialTab"
         @back="goBack"
       />
       <Profile v-else-if="step === 'profile'" @back="goBack" @logout="logout" />
