@@ -1,21 +1,21 @@
 <template>
   <BasePage>
-    <div class="mx-auto w-full max-w-5xl">
+    <div class="w-full max-w-5xl mx-auto">
       <header
-        class="relative overflow-hidden flex flex-col gap-3 border shadow-2xl rounded-2xl border-white/10 bg-gray-950/50 ring-1 ring-white/5 backdrop-blur-xl p-5 sm:p-6"
+        class="relative flex flex-col gap-3 p-5 overflow-hidden border shadow-2xl rounded-2xl border-white/10 bg-gray-950/50 ring-1 ring-white/5 backdrop-blur-xl sm:p-6"
       >
-        <div aria-hidden class="pointer-events-none absolute inset-0">
+        <div aria-hidden class="absolute inset-0 pointer-events-none">
           <div
-            class="absolute -top-24 -right-24 h-64 w-64 rounded-full bg-emerald-400/10 blur-3xl"
+            class="absolute w-64 h-64 rounded-full -top-24 -right-24 bg-emerald-400/10 blur-3xl"
           />
           <div
-            class="absolute -bottom-28 -left-24 h-72 w-72 rounded-full bg-sky-400/10 blur-3xl"
+            class="absolute rounded-full -bottom-28 -left-24 h-72 w-72 bg-sky-400/10 blur-3xl"
           />
         </div>
         <div class="flex items-center justify-between gap-4">
           <div>
             <h1
-              class="text-2xl font-extrabold tracking-tight leading-none text-emerald-300"
+              class="text-2xl font-extrabold leading-none tracking-tight text-emerald-300"
             >
               SportClash
             </h1>
@@ -25,7 +25,7 @@
           </div>
         </div>
 
-        <div class="mt-2 flex flex-wrap gap-2">
+        <div class="flex flex-wrap gap-2 mt-2">
           <button
             type="button"
             class="inline-flex items-center gap-2 rounded-xl bg-emerald-300 px-4 py-2 text-sm font-semibold text-gray-950 ring-1 ring-emerald-200/30 hover:opacity-95 transition active:scale-[0.98]"
@@ -36,7 +36,7 @@
           </button>
           <button
             type="button"
-            class="inline-flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2 text-sm font-semibold text-white ring-1 ring-white/10 hover:bg-white/15 transition"
+            class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white transition rounded-xl bg-white/10 ring-1 ring-white/10 hover:bg-white/15"
             @click="$emit('open-global')"
           >
             <span v-html="iconSvg('link')" />
@@ -45,10 +45,10 @@
         </div>
       </header>
 
-      <main class="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <main class="grid grid-cols-1 gap-4 mt-6 lg:grid-cols-3">
         <!-- Liga reciente -->
         <section
-          class="lg:col-span-2 rounded-2xl border border-white/10 bg-gray-950/50 ring-1 ring-white/5 backdrop-blur-xl p-5 sm:p-6"
+          class="p-5 border lg:col-span-2 rounded-2xl border-white/10 bg-gray-950/50 ring-1 ring-white/5 backdrop-blur-xl sm:p-6"
         >
           <div class="flex items-start justify-between gap-4">
             <div>
@@ -62,14 +62,14 @@
 
             <button
               type="button"
-              class="shrink-0 rounded-xl bg-white/10 px-3 py-2 text-sm font-semibold text-white ring-1 ring-white/10 hover:bg-white/15 transition"
+              class="px-3 py-2 text-sm font-semibold text-white transition shrink-0 rounded-xl bg-white/10 ring-1 ring-white/10 hover:bg-white/15"
               @click="$emit('open-leagues')"
             >
               Mis ligas
             </button>
           </div>
 
-          <div class="mt-4 rounded-2xl border border-white/10 bg-black/20 p-4">
+          <div class="p-4 mt-4 border rounded-2xl border-white/10 bg-black/20">
             <div
               class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
             >
@@ -79,12 +79,12 @@
                   aria-hidden
                 />
 
-                <div class="min-w-0 flex-1">
-                  <div class="h-3 w-24 rounded bg-white/10" />
+                <div class="flex-1 min-w-0">
+                  <div class="w-24 h-3 rounded bg-white/10" />
                   <div class="mt-2 h-4 w-64 max-w-[85%] rounded bg-white/10" />
-                  <div class="mt-3 flex flex-wrap gap-2">
-                    <div class="h-6 w-20 rounded-lg bg-white/10" />
-                    <div class="h-6 w-28 rounded-lg bg-white/10" />
+                  <div class="flex flex-wrap gap-2 mt-3">
+                    <div class="w-20 h-6 rounded-lg bg-white/10" />
+                    <div class="h-6 rounded-lg w-28 bg-white/10" />
                   </div>
                 </div>
               </div>
@@ -121,7 +121,7 @@
                   >
                     {{ recentLeague.name }}
                   </div>
-                  <div class="mt-2 flex flex-wrap gap-2">
+                  <div class="flex flex-wrap gap-2 mt-2">
                     <span
                       class="inline-flex items-center gap-1 rounded-lg bg-white/10 px-2 py-1 text-[11px] font-semibold text-white ring-1 ring-white/10"
                       title="Límite diario"
@@ -177,7 +177,7 @@
                 </button>
                 <button
                   type="button"
-                  class="inline-flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2 text-sm font-semibold text-white ring-1 ring-white/10 hover:bg-white/15 transition"
+                  class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white transition rounded-xl bg-white/10 ring-1 ring-white/10 hover:bg-white/15"
                   :disabled="leaguesLoading"
                   @click="
                     recentLeague
@@ -191,8 +191,8 @@
               </div>
             </div>
 
-            <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <div class="rounded-xl border border-white/10 bg-black/20 p-3">
+            <div class="grid grid-cols-2 gap-3 mt-4 sm:grid-cols-4">
+              <div class="p-3 border rounded-xl border-white/10 bg-black/20">
                 <div class="text-xs text-white/60">Puntos (mes)</div>
                 <div
                   class="mt-1 text-lg font-bold text-white/80"
@@ -201,7 +201,7 @@
                   —
                 </div>
               </div>
-              <div class="rounded-xl border border-white/10 bg-black/20 p-3">
+              <div class="p-3 border rounded-xl border-white/10 bg-black/20">
                 <div class="text-xs text-white/60">Posición</div>
                 <div
                   class="mt-1 text-lg font-bold text-white/80"
@@ -210,7 +210,7 @@
                   —
                 </div>
               </div>
-              <div class="rounded-xl border border-white/10 bg-black/20 p-3">
+              <div class="p-3 border rounded-xl border-white/10 bg-black/20">
                 <div class="text-xs text-white/60">Victorias</div>
                 <div
                   class="mt-1 text-lg font-bold text-white/80"
@@ -219,7 +219,7 @@
                   —
                 </div>
               </div>
-              <div class="rounded-xl border border-white/10 bg-black/20 p-3">
+              <div class="p-3 border rounded-xl border-white/10 bg-black/20">
                 <div class="text-xs text-white/60">Racha</div>
                 <div
                   class="mt-1 text-lg font-bold text-white/80"
@@ -231,14 +231,14 @@
             </div>
           </div>
 
-          <div class="mt-4 rounded-2xl border border-white/10 bg-black/10 p-4">
+          <div class="p-4 mt-4 border rounded-2xl border-white/10 bg-black/10">
             <details v-if="recentLeague" class="group">
               <summary
                 class="text-sm font-semibold text-white cursor-pointer select-none"
               >
                 ¿Cómo funciona?
               </summary>
-              <ul class="mt-2 space-y-1 text-sm text-white/70 list-disc pl-5">
+              <ul class="pl-5 mt-2 space-y-1 text-sm list-disc text-white/70">
                 <li>
                   Dentro de tu liga, registras un <strong>punto</strong> cuando
                   haces un deporte.
@@ -258,7 +258,7 @@
               <div class="text-sm font-semibold text-white">
                 ¿Cómo funciona?
               </div>
-              <ul class="mt-2 space-y-1 text-sm text-white/70 list-disc pl-5">
+              <ul class="pl-5 mt-2 space-y-1 text-sm list-disc text-white/70">
                 <li>
                   Dentro de tu liga, registras un <strong>punto</strong> cuando
                   haces un deporte.
@@ -278,7 +278,7 @@
 
         <!-- Stats -->
         <section
-          class="rounded-2xl border border-white/10 bg-gray-950/50 ring-1 ring-white/5 backdrop-blur-xl p-5 sm:p-6"
+          class="p-5 border rounded-2xl border-white/10 bg-gray-950/50 ring-1 ring-white/5 backdrop-blur-xl sm:p-6"
         >
           <h2 class="text-lg font-bold tracking-tight text-white">
             Tus estadísticas
@@ -287,8 +287,8 @@
             De momento son valores mock. Luego los calculamos desde Firestore.
           </p>
 
-          <div class="mt-4 grid grid-cols-1 gap-3">
-            <div class="rounded-2xl border border-white/10 bg-black/20 p-4">
+          <div class="grid grid-cols-1 gap-3 mt-4">
+            <div class="p-4 border rounded-2xl border-white/10 bg-black/20">
               <div class="text-xs text-white/60">Récord de puntos (mes)</div>
               <div
                 class="mt-1 text-2xl font-bold text-white/80"
@@ -297,7 +297,7 @@
                 —
               </div>
             </div>
-            <div class="rounded-2xl border border-white/10 bg-black/20 p-4">
+            <div class="p-4 border rounded-2xl border-white/10 bg-black/20">
               <div class="text-xs text-white/60">Victorias totales</div>
               <div
                 class="mt-1 text-2xl font-bold text-white/80"
@@ -306,7 +306,7 @@
                 —
               </div>
             </div>
-            <div class="rounded-2xl border border-white/10 bg-black/20 p-4">
+            <div class="p-4 border rounded-2xl border-white/10 bg-black/20">
               <div class="text-xs text-white/60">Mejor racha</div>
               <div
                 class="mt-1 text-2xl font-bold text-white/80"
@@ -315,7 +315,7 @@
                 —
               </div>
             </div>
-            <div class="rounded-2xl border border-white/10 bg-black/20 p-4">
+            <div class="p-4 border rounded-2xl border-white/10 bg-black/20">
               <div class="text-xs text-white/60">Puntos totales</div>
               <div
                 class="mt-1 text-2xl font-bold text-white/80"
@@ -326,7 +326,7 @@
             </div>
           </div>
 
-          <div class="mt-4 grid grid-cols-1 gap-2">
+          <div class="grid grid-cols-1 gap-2 mt-4">
             <button
               type="button"
               class="w-full rounded-xl bg-white/10 py-2.5 text-sm font-semibold text-white ring-1 ring-white/10 hover:bg-white/15 transition"
@@ -339,7 +339,7 @@
 
         <!-- Logros de atletas -->
         <section
-          class="lg:col-span-3 rounded-2xl border border-white/10 bg-gray-950/40 ring-1 ring-white/5 backdrop-blur-xl p-5 sm:p-6"
+          class="p-5 border lg:col-span-3 rounded-2xl border-white/10 bg-gray-950/40 ring-1 ring-white/5 backdrop-blur-xl sm:p-6"
         >
           <div class="flex items-start justify-between gap-4">
             <div>
@@ -353,7 +353,7 @@
 
             <button
               type="button"
-              class="shrink-0 rounded-xl bg-white/10 px-3 py-2 text-sm font-semibold text-white ring-1 ring-white/10 hover:bg-white/15 transition disabled:opacity-60"
+              class="px-3 py-2 text-sm font-semibold text-white transition shrink-0 rounded-xl bg-white/10 ring-1 ring-white/10 hover:bg-white/15 disabled:opacity-60"
               :disabled="achLoading || leaguesLoading"
               @click="loadAchievements"
             >
@@ -361,38 +361,58 @@
             </button>
           </div>
 
-          <div v-if="achError" class="mt-3 text-sm text-rose-200">
+          <div
+            v-if="achError"
+            class="p-4 mt-4 text-sm border rounded-2xl border-white/10 bg-black/20 text-rose-200"
+          >
             {{ achError }}
           </div>
 
-          <div v-else-if="achLoading" class="mt-3 text-sm text-white/70">
-            Calculando…
+          <div
+            v-else-if="achLoading || leaguesLoading"
+            class="grid grid-cols-1 gap-3 mt-4 sm:grid-cols-3"
+            aria-busy="true"
+          >
+            <div class="p-4 border rounded-2xl border-white/10 bg-black/20">
+              <div class="w-24 h-3 rounded bg-white/10" />
+              <div class="w-40 h-4 mt-2 rounded bg-white/10" />
+            </div>
+            <div class="p-4 border rounded-2xl border-white/10 bg-black/20">
+              <div class="w-32 h-3 rounded bg-white/10" />
+              <div class="w-20 h-8 mt-2 rounded bg-white/10" />
+            </div>
+            <div class="p-4 border rounded-2xl border-white/10 bg-black/20">
+              <div class="h-3 rounded w-36 bg-white/10" />
+              <div class="w-20 h-8 mt-2 rounded bg-white/10" />
+            </div>
           </div>
 
-          <div v-else-if="leaguesLoading" class="mt-3 text-sm text-white/70">
-            Cargando ligas…
-          </div>
-
-          <div v-else-if="!activeLeagueId" class="mt-3 text-sm text-white/70">
+          <div
+            v-else-if="!activeLeagueId"
+            class="p-4 mt-4 text-sm border rounded-2xl border-white/10 bg-black/20 text-white/70"
+          >
             Únete a una liga para ver logros.
           </div>
 
-          <div v-else-if="!achTop" class="mt-3 text-sm text-white/70">
+          <div
+            v-else-if="!achTop"
+            class="p-4 mt-4 text-sm border rounded-2xl border-white/10 bg-black/20 text-white/70"
+          >
             Aún no hay puntos aprobados en esta liga.
           </div>
 
-          <div v-else class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <div class="rounded-2xl border border-white/10 bg-black/20 p-4">
+          <div v-else class="grid grid-cols-1 gap-3 mt-4 sm:grid-cols-3">
+            <div class="p-4 border rounded-2xl border-white/10 bg-black/20">
               <div class="text-xs text-white/60">Atleta top</div>
               <div class="mt-1 text-sm font-semibold break-words">
                 {{ userLabel(achTop.uid) }}
               </div>
             </div>
-            <div class="rounded-2xl border border-white/10 bg-black/20 p-4">
+            <div class="p-4 border rounded-2xl border-white/10 bg-black/20">
               <div class="text-xs text-white/60">Puntos aprobados</div>
               <div class="mt-1 text-2xl font-bold">{{ achTop.points }}</div>
             </div>
-            <div class="rounded-2xl border border-white/10 bg-black/20 p-4">
+            <div class="p-4 border rounded-2xl border-white/10 bg-black/20">
               <div class="text-xs text-white/60">Aprobaciones analizadas</div>
               <div class="mt-1 text-2xl font-bold">{{ achCount }}</div>
             </div>
@@ -405,7 +425,7 @@
 
 <script setup>
 import BasePage from "./BasePage.vue";
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { useLeaguesStore } from "../services/leaguesStore";
 import { fetchLeagueAthleteAchievementsFirestore } from "../services/leaguesFirestore";
 import {
@@ -428,6 +448,7 @@ const achLoading = ref(false);
 const achError = ref("");
 const achTop = ref(null);
 const achCount = ref(0);
+const achAutoLoadedForLeague = ref("");
 
 const nameCache = ref({});
 
@@ -484,13 +505,13 @@ function userLabel(uid) {
 
 function iconSvg(name) {
   if (name === "plus") {
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4"><path d="M10 4a1 1 0 011 1v4h4a1 1 0 110 2h-4v4a1 1 0 11-2 0v-4H5a1 1 0 110-2h4V5a1 1 0 011-1z"/></svg>`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4"><path d="M10 4a1 1 0 011 1v4h4a1 1 0 110 2h-4v4a1 1 0 11-2 0v-4H5a1 1 0 110-2h4V5a1 1 0 011-1z"/></svg>`;
   }
   if (name === "link") {
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4"><path d="M12.586 7.414a2 2 0 010 2.828l-2.344 2.344a2 2 0 01-2.828 0 .999.999 0 111.414-1.414l2.344-2.344a1 1 0 10-1.414-1.414L7.414 10A4 4 0 1013 15.586l1.414-1.414A4 4 0 109.586 6L8.172 7.414a1 1 0 01-1.414-1.414L8.172 4.586A6 6 0 1116.414 12.828L15 14.242A6 6 0 116.758 6l1.414-1.414A1 1 0 119.586 6L12.586 7.414z"/></svg>`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4"><path d="M12.586 7.414a2 2 0 010 2.828l-2.344 2.344a2 2 0 01-2.828 0 .999.999 0 111.414-1.414l2.344-2.344a1 1 0 10-1.414-1.414L7.414 10A4 4 0 1013 15.586l1.414-1.414A4 4 0 109.586 6L8.172 7.414a1 1 0 01-1.414-1.414L8.172 4.586A6 6 0 1116.414 12.828L15 14.242A6 6 0 116.758 6l1.414-1.414A1 1 0 119.586 6L12.586 7.414z"/></svg>`;
   }
   if (name === "leagues") {
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4"><path d="M4 3.5A1.5 1.5 0 015.5 2h9A1.5 1.5 0 0116 3.5v12A1.5 1.5 0 0114.5 17h-9A1.5 1.5 0 014 15.5v-12zM6 6a1 1 0 100 2h8a1 1 0 100-2H6zm0 4a1 1 0 100 2h6a1 1 0 100-2H6z"/></svg>`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4"><path d="M4 3.5A1.5 1.5 0 015.5 2h9A1.5 1.5 0 0116 3.5v12A1.5 1.5 0 0114.5 17h-9A1.5 1.5 0 014 15.5v-12zM6 6a1 1 0 100 2h8a1 1 0 100-2H6zm0 4a1 1 0 100 2h6a1 1 0 100-2H6z"/></svg>`;
   }
   return "";
 }
@@ -498,10 +519,19 @@ function iconSvg(name) {
 onMounted(async () => {
   // asegura que hay ligas cargadas antes de calcular
   store.seedIfEmpty();
-  // pequeño delay lógico: si refresh es async, esto puede correr antes;
-  // aun así, el botón manual siempre lo permite.
-  setTimeout(() => {
-    loadAchievements();
-  }, 0);
 });
+
+watch(
+  [activeLeagueId, leaguesLoading],
+  ([leagueId, isLoading]) => {
+    if (isLoading) return;
+    if (!leagueId) return;
+    if (achLoading.value) return;
+    if (achAutoLoadedForLeague.value === leagueId) return;
+
+    achAutoLoadedForLeague.value = leagueId;
+    loadAchievements();
+  },
+  { immediate: true },
+);
 </script>
