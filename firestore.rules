@@ -15,6 +15,17 @@ service cloud.firestore {
       return s is string && s.size() > 0 && s.size() <= maxLen;
     }
 
+    function leagueNameOk(s, maxLen) {
+      // - mínimo 4 chars
+      // - sin espacios al inicio/fin
+      // - doc ids no admiten '/', así que lo bloqueamos
+      return s is string
+        && s.size() >= 4
+        && s.size() <= maxLen
+        && s.matches('^\\S(.*\\S)?$')
+        && !s.matches('.*\\/.*');
+    }
+
     function stringMax(s, maxLen) {
       return s is string && s.size() <= maxLen;
     }
@@ -113,12 +124,21 @@ service cloud.firestore {
 
       // Crear liga: cualquiera autenticado
       allow create: if signedIn()
-        && nonEmptyString(request.resource.data.name, 80)
+        && leagueNameOk(request.resource.data.name, 80)
         && visibilityOk(request.resource.data.visibility)
         && dailyLimitOk(request.resource.data.dailyPointsLimit)
         && request.resource.data.createdBy == uid()
         && request.resource.data.membersCount == 1
-        && request.resource.data.createdAt == request.time;
+        && request.resource.data.createdAt == request.time
+        && (
+          request.resource.data.visibility == 'private'
+          || (
+            existsAfter(/databases/$(database)/documents/publicLeagueNames/$(request.resource.data.name.lower()))
+            && getAfter(/databases/$(database)/documents/publicLeagueNames/$(request.resource.data.name.lower())).data.leagueId == leagueId
+            && getAfter(/databases/$(database)/documents/publicLeagueNames/$(request.resource.data.name.lower())).data.createdBy == uid()
+            && getAfter(/databases/$(database)/documents/publicLeagueNames/$(request.resource.data.name.lower())).data.name == request.resource.data.name
+          )
+        );
 
       // Update:
       // - owner: puede editar nombre/visibilidad/límite
@@ -127,7 +147,7 @@ service cloud.firestore {
         (
           isOwner(leagueId)
           && onlyChangedKeys(['name', 'visibility', 'dailyPointsLimit'])
-          && nonEmptyString(request.resource.data.name, 80)
+          && leagueNameOk(request.resource.data.name, 80)
           && visibilityOk(request.resource.data.visibility)
           && dailyLimitOk(request.resource.data.dailyPointsLimit)
           && request.resource.data.createdBy == resource.data.createdBy
@@ -149,7 +169,44 @@ service cloud.firestore {
       );
 
       // Delete: sólo owner
-      allow delete: if signedIn() && resource != null && isOwner(leagueId);
+      allow delete: if signedIn() && resource != null
+        && isOwner(leagueId)
+        && (
+          resource.data.visibility != 'public'
+          || !existsAfter(/databases/$(database)/documents/publicLeagueNames/$(resource.data.name.lower()))
+        );
+    }
+
+    // ---------- PUBLIC LEAGUE NAMES (unique index) ----------
+    match /publicLeagueNames/{nameKey} {
+      allow get, list: if false;
+
+      // Create único: 1 doc por nombre (lowercased)
+      // Debe ocurrir junto con la creación de la liga pública.
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['leagueId', 'name', 'createdBy', 'createdAt'])
+        && request.resource.data.leagueId is string
+        && request.resource.data.name is string
+        && request.resource.data.name.lower() == nameKey
+        && request.resource.data.createdBy == uid()
+        && request.resource.data.createdAt == request.time
+        && existsAfter(leagueRef(request.resource.data.leagueId))
+        && getAfter(leagueRef(request.resource.data.leagueId)).data.visibility == 'public'
+        && getAfter(leagueRef(request.resource.data.leagueId)).data.name.lower() == nameKey
+        && getAfter(leagueRef(request.resource.data.leagueId)).data.createdBy == uid();
+
+      // Delete: sólo owner, y la liga debe estar borrada en este commit (o ya no existir)
+      allow delete: if signedIn()
+        && (
+          // borrar un doc inexistente no tiene efecto; lo permitimos para no romper transacciones legacy
+          resource == null
+          || (
+            isOwner(resource.data.leagueId)
+            && !existsAfter(leagueRef(resource.data.leagueId))
+          )
+        );
+
+      allow update: if false;
     }
 
     // ---------- LEAGUE MEMBERS ----------

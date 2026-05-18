@@ -56,6 +56,9 @@ export async function createLeagueFirestore({
 
   const cleanName = String(name || "").trim();
   if (!cleanName) throw new Error("Nombre requerido");
+  if (cleanName.length < 4) {
+    throw new Error("El nombre debe tener mínimo 4 caracteres");
+  }
 
   const limitNum = Number(dailyPointsLimit);
   if (!Number.isFinite(limitNum) || limitNum < 1) {
@@ -63,10 +66,26 @@ export async function createLeagueFirestore({
   }
 
   const vis = visibility === "private" ? "private" : "public";
+  const publicNameKey = cleanName.toLowerCase();
 
   const result = await runTransaction(db, async (tx) => {
     // IMPORTANTE: no usamos addDoc dentro de transaction.
     const leagueDocRef = doc(leaguesCol);
+
+    if (vis === "public") {
+      const nameRef = doc(db, "publicLeagueNames", publicNameKey);
+      const nameSnap = await tx.get(nameRef);
+      if (nameSnap.exists()) {
+        throw new Error("Ya existe una liga pública con ese nombre");
+      }
+      tx.set(nameRef, {
+        leagueId: leagueDocRef.id,
+        name: cleanName,
+        createdBy: user.uid,
+        createdAt: serverTimestamp(),
+      });
+    }
+
     tx.set(leagueDocRef, {
       name: cleanName,
       visibility: vis,
@@ -180,7 +199,23 @@ export async function fetchMyMembershipInLeagueFirestore(leagueId) {
 export async function deleteLeagueFirestore(leagueId) {
   requireUser();
   if (!leagueId) throw new Error("leagueId requerido");
-  await deleteDoc(doc(db, "leagues", String(leagueId)));
+
+  const id = String(leagueId);
+  await runTransaction(db, async (tx) => {
+    const leagueRef = doc(db, "leagues", id);
+    const snap = await tx.get(leagueRef);
+    if (!snap.exists()) throw new Error("Liga no encontrada");
+
+    const data = snap.data() || {};
+    const name = String(data?.name || "").trim();
+    const visibility = data?.visibility === "private" ? "private" : "public";
+
+    if (visibility === "public" && name) {
+      tx.delete(doc(db, "publicLeagueNames", name.toLowerCase()));
+    }
+
+    tx.delete(leagueRef);
+  });
 }
 
 export async function fetchLeagueMembersFirestore({

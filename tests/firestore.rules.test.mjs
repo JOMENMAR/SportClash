@@ -18,6 +18,7 @@ import {
   serverTimestamp,
   setDoc,
   updateDoc,
+  writeBatch,
   where,
 } from "firebase/firestore";
 
@@ -145,16 +146,26 @@ test("Leagues: authenticated user can create league; must create fields correctl
   const bob = testEnv.authenticatedContext("bob");
   const db = bob.firestore();
 
-  await assertSucceeds(
-    setDoc(doc(db, "leagues", "L1"), {
-      name: "Mi liga",
-      visibility: "public",
-      dailyPointsLimit: 3,
-      createdAt: serverTimestamp(),
-      createdBy: "bob",
-      membersCount: 1,
-    }),
-  );
+  const leagueName = "Mi liga";
+  const nameKey = leagueName.toLowerCase();
+
+  const batch = writeBatch(db);
+  batch.set(doc(db, "leagues", "L1"), {
+    name: leagueName,
+    visibility: "public",
+    dailyPointsLimit: 3,
+    createdAt: serverTimestamp(),
+    createdBy: "bob",
+    membersCount: 1,
+  });
+  batch.set(doc(db, "publicLeagueNames", nameKey), {
+    leagueId: "L1",
+    name: leagueName,
+    createdBy: "bob",
+    createdAt: serverTimestamp(),
+  });
+
+  await assertSucceeds(batch.commit());
 
   // bootstrap membership owner
   await assertSucceeds(
@@ -163,6 +174,88 @@ test("Leagues: authenticated user can create league; must create fields correctl
       uid: "bob",
       role: "owner",
       joinedAt: serverTimestamp(),
+    }),
+  );
+});
+
+test("Leagues: name must be at least 4 chars", async () => {
+  const bob = testEnv.authenticatedContext("bob");
+  const db = bob.firestore();
+
+  const leagueName = "abc";
+  const nameKey = leagueName.toLowerCase();
+
+  const batch = writeBatch(db);
+  batch.set(doc(db, "leagues", "Lshort"), {
+    name: leagueName,
+    visibility: "public",
+    dailyPointsLimit: 3,
+    createdAt: serverTimestamp(),
+    createdBy: "bob",
+    membersCount: 1,
+  });
+  batch.set(doc(db, "publicLeagueNames", nameKey), {
+    leagueId: "Lshort",
+    name: leagueName,
+    createdBy: "bob",
+    createdAt: serverTimestamp(),
+  });
+
+  await assertFails(batch.commit());
+});
+
+test("Leagues: public leagues cannot share the same name; private can", async () => {
+  const bobDb = testEnv.authenticatedContext("bob").firestore();
+  const aliceDb = testEnv.authenticatedContext("alice").firestore();
+
+  const leagueName = "Liga Unica";
+  const nameKey = leagueName.toLowerCase();
+
+  // Create first public league (bob)
+  const b1 = writeBatch(bobDb);
+  b1.set(doc(bobDb, "leagues", "LP1"), {
+    name: leagueName,
+    visibility: "public",
+    dailyPointsLimit: 3,
+    createdAt: serverTimestamp(),
+    createdBy: "bob",
+    membersCount: 1,
+  });
+  b1.set(doc(bobDb, "publicLeagueNames", nameKey), {
+    leagueId: "LP1",
+    name: leagueName,
+    createdBy: "bob",
+    createdAt: serverTimestamp(),
+  });
+  await assertSucceeds(b1.commit());
+
+  // Attempt second public league with same name (alice) must fail
+  const b2 = writeBatch(aliceDb);
+  b2.set(doc(aliceDb, "leagues", "LP2"), {
+    name: leagueName,
+    visibility: "public",
+    dailyPointsLimit: 3,
+    createdAt: serverTimestamp(),
+    createdBy: "alice",
+    membersCount: 1,
+  });
+  b2.set(doc(aliceDb, "publicLeagueNames", nameKey), {
+    leagueId: "LP2",
+    name: leagueName,
+    createdBy: "alice",
+    createdAt: serverTimestamp(),
+  });
+  await assertFails(b2.commit());
+
+  // Private league with same name should succeed (no index doc)
+  await assertSucceeds(
+    setDoc(doc(aliceDb, "leagues", "Lpriv"), {
+      name: leagueName,
+      visibility: "private",
+      dailyPointsLimit: 3,
+      createdAt: serverTimestamp(),
+      createdBy: "alice",
+      membersCount: 1,
     }),
   );
 });

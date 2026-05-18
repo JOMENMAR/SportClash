@@ -25,6 +25,7 @@ import TopNav from "./components/TopNav.vue";
 import AppFooter from "./components/AppFooter.vue";
 import Profile from "./components/Profile.vue";
 import ToastHost from "./components/ToastHost.vue";
+import { useLeaguesStore } from "./services/leaguesStore";
 
 // Secuencia sin router: login -> register -> verify -> completar -> home
 const step = ref("login");
@@ -33,6 +34,8 @@ const previousStep = ref("home");
 const activeLeagueId = ref("");
 const activeLeagueInitialTab = ref("");
 const activeLeagueName = ref("");
+
+const leaguesStore = useLeaguesStore();
 
 const pendingJoinLeagueId = ref("");
 
@@ -387,6 +390,13 @@ function onLeagueLoaded(payload) {
   if (name) activeLeagueName.value = name;
 }
 
+async function onLeagueDeleted() {
+  activeLeagueId.value = "";
+  activeLeagueInitialTab.value = "";
+  activeLeagueName.value = "";
+  await leaguesStore.refresh();
+}
+
 function goBack() {
   step.value = previousStep.value || "home";
 }
@@ -508,6 +518,7 @@ function navActive() {
         :initialTab="activeLeagueInitialTab"
         @back="goBack"
         @league-loaded="onLeagueLoaded"
+        @league-deleted="onLeagueDeleted"
       />
       <Profile v-else-if="step === 'profile'" @back="goBack" @logout="logout" />
       <Home

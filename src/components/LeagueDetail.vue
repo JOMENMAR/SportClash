@@ -1000,7 +1000,7 @@ import {
   formatUidShort,
 } from "../services/userProfiles";
 
-const emit = defineEmits(["back", "league-loaded"]);
+const emit = defineEmits(["back", "league-loaded", "league-deleted"]);
 
 const props = defineProps({
   leagueId: {
@@ -1202,6 +1202,7 @@ async function deleteLeagueNow() {
   try {
     await deleteLeagueFirestore(props.leagueId);
     toast.success("Liga borrada");
+    emit("league-deleted", { id: props.leagueId });
     emit("back");
   } catch (e) {
     toast.error(e?.message || "No se pudo borrar la liga");
