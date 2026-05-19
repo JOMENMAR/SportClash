@@ -23,8 +23,7 @@
             <div>
               <h2 class="text-lg font-bold tracking-tight text-white">Datos</h2>
               <p class="mt-1 text-sm text-white/60">
-                Se guardan en tu documento de
-                <span class="font-mono">users/&lt;uid&gt;</span>.
+                Se guardan en tu documento de usuario.
               </p>
             </div>
             <button
@@ -125,11 +124,6 @@
 
           <div class="mt-4 grid grid-cols-1 gap-3">
             <div class="rounded-2xl border border-white/10 bg-black/20 p-4">
-              <div class="text-xs text-white/60">UID</div>
-              <div class="mt-1 font-mono text-sm break-all">{{ uidLabel }}</div>
-            </div>
-
-            <div class="rounded-2xl border border-white/10 bg-black/20 p-4">
               <div class="text-xs text-white/60">Email verificado</div>
               <div class="mt-1 font-semibold">
                 {{ emailVerified ? "Sí" : "No" }}
@@ -181,7 +175,6 @@ const nombre = ref("");
 const apodo = ref("");
 const fechaNacimiento = ref("");
 
-const uidLabel = computed(() => auth.currentUser?.uid ?? "—");
 const email = computed(() => auth.currentUser?.email ?? "—");
 const emailVerified = computed(() => auth.currentUser?.emailVerified ?? false);
 

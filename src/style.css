@@ -68,6 +68,14 @@ body {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
+/*
+  Fix (Windows/Chrome): en selects con texto claro, el desplegable usa fondo claro
+  y puede heredar el color (quedando “blanco sobre blanco”).
+*/
+.sc-dark-select option {
+  @apply bg-white text-gray-900;
+}
+
 h1,
 h2 {
   @apply font-bold text-gray-800;

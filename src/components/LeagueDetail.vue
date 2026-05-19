@@ -210,15 +210,11 @@
                           <span class="text-white/80">{{
                             userLabel(m.uid)
                           }}</span>
-                          <span class="ml-2 text-xs font-normal text-white/50">
-                            ({{ uidShort(m.uid) }})
-                          </span>
                         </div>
                         <div class="mt-1 text-xs text-white/60">
                           rol: <span class="font-semibold">{{ m.role }}</span>
                         </div>
                       </div>
-                      <div class="text-[11px] text-white/50">{{ m.id }}</div>
                     </div>
 
                     <div
@@ -232,7 +228,7 @@
                           <label class="text-xs text-white/60">Rol:</label>
                           <select
                             v-model="memberRoleDraft[m.id]"
-                            class="px-3 py-2 text-xs text-white rounded-xl bg-white/10 ring-1 ring-white/10 focus:outline-none"
+                            class="sc-dark-select px-3 py-2 text-xs text-white rounded-xl bg-white/10 ring-1 ring-white/10 focus:outline-none"
                             :disabled="
                               memberBusyId === m.id || m.role === 'owner'
                             "
@@ -617,7 +613,7 @@
                           <div class="text-sm font-semibold text-white">
                             +{{ r.points }}
                             <span class="text-xs font-normal text-white/60">
-                              · {{ userLabel(r.uid) }} ({{ uidShort(r.uid) }})
+                              · {{ userLabel(r.uid) }}
                             </span>
                           </div>
                           <div v-if="r.note" class="mt-1 text-xs text-white/70">
@@ -717,9 +713,6 @@
                       <div class="min-w-0">
                         <div class="text-sm font-semibold text-white truncate">
                           #{{ row.rank }} · {{ userLabel(row.uid) }}
-                          <span class="ml-2 text-xs font-normal text-white/50">
-                            ({{ uidShort(row.uid) }})
-                          </span>
                         </div>
                         <div class="mt-1 text-xs text-white/60">
                           Puntos aprobados:
@@ -860,12 +853,6 @@
                           <span class="text-white/80">{{
                             userLabel(r.uid)
                           }}</span>
-                          <span class="ml-2 text-xs font-normal text-white/50">
-                            ({{ uidShort(r.uid) }})
-                          </span>
-                        </div>
-                        <div class="mt-1 text-[11px] text-white/50">
-                          {{ r.id }}
                         </div>
                       </div>
 
@@ -995,10 +982,7 @@ import {
 } from "../services/leaguesFirestore";
 import BasePage from "./BasePage.vue";
 import { auth } from "../firebase";
-import {
-  fetchUserProfileLabels,
-  formatUidShort,
-} from "../services/userProfiles";
+import { fetchUserProfileLabels } from "../services/userProfiles";
 
 const emit = defineEmits(["back", "league-loaded", "league-deleted"]);
 
@@ -1275,14 +1259,10 @@ function isOwnPointRequest(req) {
   return String(req?.uid || "") && String(req?.uid) === String(myUid.value);
 }
 
-function uidShort(uid) {
-  return formatUidShort(uid);
-}
-
 function userLabel(uid) {
   const u = String(uid || "");
   const name = userNames.value?.[u];
-  return name ? name : u;
+  return name ? name : "Atleta";
 }
 
 async function preloadUserNames(uids) {

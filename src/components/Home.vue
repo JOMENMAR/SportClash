@@ -440,10 +440,7 @@ import BasePage from "./BasePage.vue";
 import { computed, onMounted, ref, watch } from "vue";
 import { useLeaguesStore } from "../services/leaguesStore";
 import { fetchLeagueAthleteAchievementsFirestore } from "../services/leaguesFirestore";
-import {
-  fetchUserProfileLabel,
-  formatUidShort,
-} from "../services/userProfiles";
+import { fetchUserProfileLabel } from "../services/userProfiles";
 
 defineEmits([
   "create-league",
@@ -512,7 +509,7 @@ async function loadAchievements() {
 function userLabel(uid) {
   const u = String(uid || "");
   const n = nameCache.value?.[u] || "";
-  return n || formatUidShort(u);
+  return n || "Atleta";
 }
 
 function iconSvg(name) {
