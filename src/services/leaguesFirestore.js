@@ -647,9 +647,9 @@ export async function fetchLeagueHistoryFirestore({
   const user = requireUser();
   if (!leagueId) throw new Error("leagueId requerido");
 
-  // Query-safe: las rules exigen filtrar por visibleToUids.
-  // viewerRole se mantiene por compatibilidad con llamadas existentes.
-  void viewerRole;
+  // v1: si existe backend que escribe leagueHistory, lo usamos.
+  // Si no hay eventos (muy común en despliegues sin backend), derivamos un historial
+  // desde colecciones existentes (pointRequests + leagueJoinRequests) sin escribir nada.
 
   const q = query(
     collection(db, "leagueHistory"),
@@ -663,7 +663,196 @@ export async function fetchLeagueHistoryFirestore({
   // Con ids que empiezan con timestamp, podemos ordenar en cliente.
   const items = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
   items.sort((a, b) => String(b.id).localeCompare(String(a.id)));
-  return items;
+
+  if (items.length) return items;
+
+  const isAdminLike = viewerRole === "owner" || viewerRole === "admin";
+
+  function toMillis(ts) {
+    try {
+      if (ts?.toMillis) return ts.toMillis();
+      if (ts?.toDate) return ts.toDate().getTime();
+    } catch {
+      // ignore
+    }
+    return 0;
+  }
+
+  function mkId(prefix, ts, extra) {
+    const t = String(ts || 0).padStart(13, "0");
+    return `${String(leagueId)}_${prefix}_${t}_${extra || ""}`;
+  }
+
+  function pointToEvent(r) {
+    const decidedBy = String(r?.decidedBy || "");
+    const decidedAt = r?.decidedAt || null;
+    const status = String(r?.status || "");
+    const requestUid = String(r?.uid || "");
+    if (!decidedBy || !decidedAt) return null;
+    if (status !== "approved" && status !== "rejected") return null;
+    return {
+      id: mkId(
+        "pointRequest.decide",
+        toMillis(decidedAt),
+        `${decidedBy}_${requestUid}_${status}`,
+      ),
+      leagueId: String(leagueId),
+      type: "pointRequest.decide",
+      actorUid: decidedBy,
+      payload: {
+        status,
+        points: r?.points ?? 1,
+        requestUid,
+        rejectReason: r?.rejectReason ?? null,
+        rejectedOn: r?.rejectedOn ?? null,
+        note: r?.note ?? "",
+        performedOn: r?.performedOn ?? null,
+        requestId: r?.id || null,
+      },
+      createdAt: decidedAt,
+    };
+  }
+
+  function joinToEvent(r) {
+    const decidedBy = String(r?.decidedBy || "");
+    const decidedAt = r?.decidedAt || null;
+    const status = String(r?.status || "");
+    const requestUid = String(r?.uid || "");
+    if (!decidedBy || !decidedAt) return null;
+    if (status !== "approved" && status !== "rejected") return null;
+    return {
+      id: mkId(
+        "joinRequest.decide",
+        toMillis(decidedAt),
+        `${decidedBy}_${requestUid}_${status}`,
+      ),
+      leagueId: String(leagueId),
+      type: "joinRequest.decide",
+      actorUid: decidedBy,
+      payload: {
+        status,
+        requestUid,
+        requestId: r?.id || null,
+      },
+      createdAt: decidedAt,
+    };
+  }
+
+  // ---- PointRequests (decididas) ----
+  const pointEvents = [];
+  if (isAdminLike) {
+    const [approvedSnap, rejectedSnap] = await Promise.all([
+      getDocs(
+        query(
+          collection(db, "pointRequests"),
+          where("leagueId", "==", String(leagueId)),
+          where("status", "==", "approved"),
+          limit(max),
+        ),
+      ),
+      getDocs(
+        query(
+          collection(db, "pointRequests"),
+          where("leagueId", "==", String(leagueId)),
+          where("status", "==", "rejected"),
+          limit(max),
+        ),
+      ),
+    ]);
+    for (const d of approvedSnap.docs) {
+      const ev = pointToEvent({ id: d.id, ...d.data() });
+      if (ev) pointEvents.push(ev);
+    }
+    for (const d of rejectedSnap.docs) {
+      const ev = pointToEvent({ id: d.id, ...d.data() });
+      if (ev) pointEvents.push(ev);
+    }
+  } else {
+    // miembro: ve aprobadas de la liga + sus propias (incluye rechazadas propias)
+    const [approved, mine] = await Promise.all([
+      getDocs(
+        query(
+          collection(db, "pointRequests"),
+          where("leagueId", "==", String(leagueId)),
+          where("status", "==", "approved"),
+          limit(max),
+        ),
+      ),
+      getDocs(
+        query(
+          collection(db, "pointRequests"),
+          where("leagueId", "==", String(leagueId)),
+          where("uid", "==", user.uid),
+          limit(max),
+        ),
+      ),
+    ]);
+    for (const d of approved.docs) {
+      const ev = pointToEvent({ id: d.id, ...d.data() });
+      if (ev) pointEvents.push(ev);
+    }
+    for (const d of mine.docs) {
+      const ev = pointToEvent({ id: d.id, ...d.data() });
+      if (ev) pointEvents.push(ev);
+    }
+  }
+
+  // ---- JoinRequests (decididas) ----
+  const joinEvents = [];
+  if (isAdminLike) {
+    const [approvedSnap, rejectedSnap] = await Promise.all([
+      getDocs(
+        query(
+          collection(db, "leagueJoinRequests"),
+          where("leagueId", "==", String(leagueId)),
+          where("status", "==", "approved"),
+          limit(max),
+        ),
+      ),
+      getDocs(
+        query(
+          collection(db, "leagueJoinRequests"),
+          where("leagueId", "==", String(leagueId)),
+          where("status", "==", "rejected"),
+          limit(max),
+        ),
+      ),
+    ]);
+    for (const d of approvedSnap.docs) {
+      const ev = joinToEvent({ id: d.id, ...d.data() });
+      if (ev) joinEvents.push(ev);
+    }
+    for (const d of rejectedSnap.docs) {
+      const ev = joinToEvent({ id: d.id, ...d.data() });
+      if (ev) joinEvents.push(ev);
+    }
+  } else {
+    // miembro: sólo su propia solicitud de unión
+    const reqId = `${leagueId}_${user.uid}`;
+    const reqSnap = await getDoc(doc(db, "leagueJoinRequests", reqId));
+    if (reqSnap.exists()) {
+      const ev = joinToEvent({ id: reqSnap.id, ...reqSnap.data() });
+      if (ev) joinEvents.push(ev);
+    }
+  }
+
+  // Merge + sort
+  const all = [...pointEvents, ...joinEvents];
+  const seen = new Set();
+  const deduped = [];
+  for (const it of all) {
+    if (!it?.id || seen.has(it.id)) continue;
+    seen.add(it.id);
+    deduped.push(it);
+  }
+
+  deduped.sort((a, b) => {
+    const ta = toMillis(a?.createdAt);
+    const tb = toMillis(b?.createdAt);
+    return tb - ta || String(b?.id).localeCompare(String(a?.id));
+  });
+
+  return deduped.slice(0, max);
 }
 
 export async function decidePointRequestFirestore({
