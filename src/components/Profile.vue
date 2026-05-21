@@ -13,20 +13,40 @@
         </div>
 
         <div class="flex items-start gap-3">
+          <button
+            v-if="isSelf"
+            type="button"
+            class="inline-flex h-10 w-10 items-center justify-center rounded-xl ring-1 shrink-0 cursor-pointer hover:opacity-95 transition"
+            :class="accent.badgeWrapClass"
+            :title="'Cambiar icono'"
+            @click="iconPickerOpen = true"
+          >
+            <span
+              class="text-lg"
+              :class="accent.badgeTextClass"
+              :style="badgeTextStyle"
+              >{{ profileBadge }}</span
+            >
+          </button>
           <div
+            v-else
             class="inline-flex h-10 w-10 items-center justify-center rounded-xl ring-1 shrink-0"
             :class="accent.badgeWrapClass"
             aria-hidden
           >
-            <span class="text-lg" :class="accent.badgeTextClass">{{
-              profileBadge
-            }}</span>
+            <span
+              class="text-lg"
+              :class="accent.badgeTextClass"
+              :style="badgeTextStyle"
+              >{{ profileBadge }}</span
+            >
           </div>
 
           <div class="min-w-0">
             <h1
               class="text-2xl font-extrabold tracking-tight leading-none truncate"
               :class="accent.titleTextClass"
+              :style="titleTextStyle"
             >
               {{ headerTitle }}
             </h1>
@@ -87,21 +107,30 @@
             </div>
 
             <div>
-              <label class="text-sm text-white/70" for="p-emoji"
-                >Emoji (decoración)</label
+              <div class="text-sm text-white/70">Icono del perfil</div>
+              <div
+                class="mt-1 rounded-xl border border-white/10 bg-black/20 p-4"
               >
-              <input
-                id="p-emoji"
-                v-model.trim="profileEmoji"
-                type="text"
-                inputmode="text"
-                maxlength="6"
-                class="mt-1 w-full rounded-xl bg-white/10 px-4 py-3 text-sm text-white placeholder-white/40 ring-1 ring-white/10 focus:outline-none focus:ring-2 focus:ring-emerald-300/60"
-                placeholder="Ej: 🏀"
-                autocomplete="off"
-              />
-              <div class="mt-1 text-xs text-white/60">
-                Se mostrará como icono en tu perfil.
+                <div class="flex items-center justify-between gap-3">
+                  <div class="min-w-0">
+                    <div class="text-sm font-semibold text-white">
+                      {{ profileBadge }}
+                      <span class="text-xs font-normal text-white/60">
+                        (pulsa el icono de arriba para cambiarlo)
+                      </span>
+                    </div>
+                    <div class="mt-1 text-xs text-white/60">
+                      El icono se guarda como una selección (no emoji libre).
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    class="rounded-xl bg-white/10 px-3 py-2 text-sm font-semibold text-white ring-1 ring-white/10 hover:bg-white/15 transition"
+                    @click="iconPickerOpen = true"
+                  >
+                    Cambiar
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -126,22 +155,134 @@
               </div>
 
               <div>
-                <label class="text-sm text-white/70" for="p-accent"
-                  >Color</label
+                <label class="text-sm text-white/70" for="p-icon-color"
+                  >Color del icono</label
                 >
-                <select
-                  id="p-accent"
-                  v-model="profileAccent"
-                  class="sc-dark-select mt-1 w-full rounded-xl bg-white/10 px-4 py-3 text-sm text-white ring-1 ring-white/10 focus:outline-none"
-                >
-                  <option
-                    v-for="o in PROFILE_ACCENT_OPTIONS"
-                    :key="o.key"
-                    :value="o.key"
+                <div class="mt-1 flex items-center gap-3">
+                  <input
+                    id="p-icon-color"
+                    v-model="profileIconColor"
+                    type="color"
+                    class="h-11 w-14 rounded-xl bg-white/10 ring-1 ring-white/10"
+                  />
+                  <div class="text-xs text-white/60">
+                    Se aplica al icono (la “M”/emoji elegido).
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div class="text-sm text-white/70">Bloques del perfil</div>
+              <div
+                class="mt-1 rounded-xl border border-white/10 bg-black/20 p-4"
+              >
+                <div class="text-xs text-white/60">
+                  Elige qué secciones se muestran en la columna derecha.
+                </div>
+
+                <div class="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  <label
+                    class="inline-flex items-center gap-2 text-sm text-white/80"
                   >
-                    {{ o.label }}
-                  </option>
-                </select>
+                    <input
+                      v-model="showGlobalBadges"
+                      type="checkbox"
+                      class="h-4 w-4 rounded border-white/20 bg-white/10"
+                    />
+                    Insignias globales
+                  </label>
+
+                  <label
+                    class="inline-flex items-center gap-2 text-sm text-white/80"
+                  >
+                    <input
+                      v-model="showLeagueBadges"
+                      type="checkbox"
+                      class="h-4 w-4 rounded border-white/20 bg-white/10"
+                    />
+                    Insignias de liga
+                  </label>
+
+                  <label
+                    class="inline-flex items-center gap-2 text-sm text-white/80"
+                  >
+                    <input
+                      v-model="showBestAchievements"
+                      type="checkbox"
+                      class="h-4 w-4 rounded border-white/20 bg-white/10"
+                    />
+                    Mejores logros
+                  </label>
+
+                  <label
+                    class="inline-flex items-center gap-2 text-sm text-white/80"
+                  >
+                    <input
+                      v-model="showFavoriteLeague"
+                      type="checkbox"
+                      class="h-4 w-4 rounded border-white/20 bg-white/10"
+                    />
+                    Liga favorita
+                  </label>
+                </div>
+
+                <div v-if="showFavoriteLeague" class="mt-3">
+                  <label class="text-sm text-white/70" for="p-fav-league">
+                    Liga favorita
+                  </label>
+                  <select
+                    id="p-fav-league"
+                    v-model="favoriteLeagueId"
+                    class="sc-dark-select mt-1 w-full rounded-xl bg-white/10 px-4 py-3 text-sm text-white ring-1 ring-white/10 focus:outline-none"
+                    :disabled="myLeaguesLoading"
+                  >
+                    <option value="">Ninguna</option>
+                    <option v-for="l in myLeagues" :key="l.id" :value="l.id">
+                      {{ leagueOptionLabel(l) }}
+                    </option>
+                  </select>
+
+                  <div
+                    v-if="myLeaguesLoading"
+                    class="mt-1 text-xs text-white/60"
+                  >
+                    Cargando tus ligas…
+                  </div>
+                  <div
+                    v-else-if="myLeaguesError"
+                    class="mt-1 text-xs text-rose-100"
+                  >
+                    {{ myLeaguesError }}
+                  </div>
+                  <div
+                    v-else-if="favoriteLeagueMissing"
+                    class="mt-1 text-xs text-amber-100"
+                  >
+                    Esa liga ya no está disponible (puede que la hayas
+                    abandonado o se haya borrado). Elige otra o “Ninguna”.
+                  </div>
+                  <div v-else class="mt-1 text-xs text-white/60">
+                    Elige una de tus ligas (pública o privada).
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label class="text-sm text-white/70" for="p-text-color"
+                >Color del texto</label
+              >
+              <div class="mt-1 flex items-center gap-3">
+                <input
+                  id="p-text-color"
+                  v-model="profileTextColor"
+                  type="color"
+                  class="h-11 w-14 rounded-xl bg-white/10 ring-1 ring-white/10"
+                />
+                <div class="text-xs text-white/60">
+                  Se aplica al título principal del perfil.
+                </div>
               </div>
             </div>
 
@@ -287,14 +428,28 @@
 
         <aside class="space-y-4">
           <div
+            v-if="showGlobalBadges"
             class="rounded-2xl border border-white/10 bg-gray-950/50 p-5 ring-1 ring-white/5 backdrop-blur-xl sm:p-6"
           >
-            <h2 class="text-lg font-bold tracking-tight text-white">
-              Insignias globales
-            </h2>
-            <p class="mt-1 text-sm text-white/60">
-              Logros generales (y algunos visibles para todos).
-            </p>
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <h2 class="text-lg font-bold tracking-tight text-white">
+                  Insignias globales
+                </h2>
+                <p class="mt-1 text-sm text-white/60">
+                  Logros generales (y algunos visibles para todos).
+                </p>
+              </div>
+
+              <button
+                v-if="isSelf"
+                type="button"
+                class="rounded-xl bg-white/10 px-3 py-2 text-sm font-semibold text-white ring-1 ring-white/10 hover:bg-white/15 transition"
+                @click="achievementsOpen = true"
+              >
+                Ver logros
+              </button>
+            </div>
 
             <div
               v-if="globalBadgesError"
@@ -330,6 +485,85 @@
           </div>
 
           <div
+            v-if="showBestAchievements"
+            class="rounded-2xl border border-white/10 bg-gray-950/50 p-5 ring-1 ring-white/5 backdrop-blur-xl sm:p-6"
+          >
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <h2 class="text-lg font-bold tracking-tight text-white">
+                  Mejores logros
+                </h2>
+                <p class="mt-1 text-sm text-white/60">
+                  Un resumen rápido de tus logros.
+                </p>
+              </div>
+
+              <button
+                v-if="isSelf"
+                type="button"
+                class="rounded-xl bg-white/10 px-3 py-2 text-sm font-semibold text-white ring-1 ring-white/10 hover:bg-white/15 transition"
+                @click="achievementsOpen = true"
+              >
+                Ver logros
+              </button>
+            </div>
+
+            <div
+              v-if="globalBadgesError"
+              class="mt-4 rounded-xl border border-rose-400/20 bg-rose-500/10 p-3 text-sm text-rose-100"
+            >
+              {{ globalBadgesError }}
+            </div>
+
+            <div
+              v-else-if="globalBadgesLoading"
+              class="mt-4 rounded-xl border border-white/10 bg-black/20 p-4 text-sm text-white/70"
+            >
+              Cargando…
+            </div>
+
+            <div
+              v-else-if="!bestAchievements.length"
+              class="mt-4 rounded-xl border border-white/10 bg-black/20 p-4 text-sm text-white/70"
+            >
+              Aún no hay logros para mostrar.
+            </div>
+
+            <div v-else class="mt-4 flex flex-wrap gap-2">
+              <span
+                v-for="b in bestAchievements"
+                :key="b.key"
+                class="inline-flex items-center rounded-lg bg-white/10 px-2 py-1 text-[11px] font-semibold text-white ring-1 ring-white/10"
+                :title="b.subtitle"
+              >
+                {{ b.label }}
+              </span>
+            </div>
+          </div>
+
+          <div
+            v-if="showFavoriteLeague && (isSelf || favoriteLeagueName)"
+            class="rounded-2xl border border-white/10 bg-gray-950/50 p-5 ring-1 ring-white/5 backdrop-blur-xl sm:p-6"
+          >
+            <h2 class="text-lg font-bold tracking-tight text-white">
+              Liga favorita
+            </h2>
+            <p class="mt-1 text-sm text-white/60">
+              Se muestra en tu perfil si la activas.
+            </p>
+
+            <div
+              class="mt-4 rounded-xl border border-white/10 bg-black/20 p-4 text-sm text-white/80"
+            >
+              {{
+                favoriteLeagueDisplay ||
+                "Aún no has configurado tu liga favorita."
+              }}
+            </div>
+          </div>
+
+          <div
+            v-if="showLeagueBadges"
             class="rounded-2xl border border-white/10 bg-gray-950/50 p-5 ring-1 ring-white/5 backdrop-blur-xl sm:p-6"
           >
             <h2 class="text-lg font-bold tracking-tight text-white">
@@ -395,6 +629,16 @@
               </div>
 
               <button
+                v-if="!emailVerified"
+                type="button"
+                class="w-full rounded-xl bg-white/10 py-2.5 text-sm font-semibold text-white ring-1 ring-white/10 hover:bg-white/15 transition disabled:opacity-60"
+                :disabled="verifyBusy"
+                @click="sendVerifyEmail"
+              >
+                {{ verifyBusy ? "Enviando…" : "Verificar email" }}
+              </button>
+
+              <button
                 type="button"
                 class="w-full rounded-xl bg-rose-500/15 py-2.5 text-sm font-semibold text-rose-100 ring-1 ring-rose-400/20 hover:bg-rose-500/20 transition"
                 @click="confirmLogoutOpen = true"
@@ -416,6 +660,154 @@
         danger
         @confirm="$emit('logout')"
       />
+
+      <!-- Modal: selector de icono (solo self) -->
+      <div
+        v-if="iconPickerOpen"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4"
+      >
+        <div
+          class="absolute inset-0 bg-black/60"
+          @click="iconPickerOpen = false"
+        />
+        <div
+          class="relative w-full max-w-lg rounded-2xl border border-white/10 bg-gray-950/90 p-5 ring-1 ring-white/5 backdrop-blur-xl"
+        >
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <div class="text-lg font-bold tracking-tight text-white">
+                Elige tu icono
+              </div>
+              <div class="mt-1 text-sm text-white/60">
+                Se mostrará en tu perfil y en listados.
+              </div>
+            </div>
+            <button
+              type="button"
+              class="rounded-xl bg-white/10 px-3 py-2 text-sm font-semibold text-white ring-1 ring-white/10 hover:bg-white/15 transition"
+              @click="iconPickerOpen = false"
+            >
+              Cerrar
+            </button>
+          </div>
+
+          <div class="mt-4 grid grid-cols-4 gap-2 sm:grid-cols-6">
+            <button
+              type="button"
+              class="rounded-xl border border-white/10 bg-black/20 p-2 text-center text-lg text-white hover:bg-white/10 transition"
+              :class="!profileIconKey ? 'ring-2 ring-emerald-300/60' : ''"
+              @click="selectProfileIcon('')"
+              title="Inicial"
+            >
+              {{ displayName.slice(0, 1).toUpperCase() || "·" }}
+            </button>
+
+            <button
+              v-for="it in PROFILE_ICON_OPTIONS"
+              :key="it.key"
+              type="button"
+              class="rounded-xl border border-white/10 bg-black/20 p-2 text-center text-lg text-white hover:bg-white/10 transition"
+              :class="
+                profileIconKey === it.key ? 'ring-2 ring-emerald-300/60' : ''
+              "
+              @click="selectProfileIcon(it.key)"
+              :title="it.label"
+            >
+              {{ it.emoji }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal: logros (pendientes + progreso) -->
+      <div
+        v-if="achievementsOpen"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4"
+      >
+        <div
+          class="absolute inset-0 bg-black/60"
+          @click="achievementsOpen = false"
+        />
+        <div
+          class="relative w-full max-w-xl rounded-2xl border border-white/10 bg-gray-950/90 p-5 ring-1 ring-white/5 backdrop-blur-xl"
+        >
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <div class="text-lg font-bold tracking-tight text-white">
+                Logros
+              </div>
+              <div class="mt-1 text-sm text-white/60">
+                Mira lo que tienes y lo que te falta.
+              </div>
+            </div>
+            <button
+              type="button"
+              class="rounded-xl bg-white/10 px-3 py-2 text-sm font-semibold text-white ring-1 ring-white/10 hover:bg-white/15 transition"
+              @click="achievementsOpen = false"
+            >
+              Cerrar
+            </button>
+          </div>
+
+          <div v-if="achievementsLoading" class="mt-4 text-sm text-white/70">
+            Cargando…
+          </div>
+
+          <template v-else>
+            <div class="mt-4">
+              <div class="text-xs font-semibold text-white/70">Logrados</div>
+              <div
+                v-if="!globalBadges.length"
+                class="mt-2 rounded-xl border border-white/10 bg-black/20 p-4 text-sm text-white/70"
+              >
+                Aún no has logrado nada.
+              </div>
+              <div v-else class="mt-2 flex flex-wrap gap-2">
+                <span
+                  v-for="b in globalBadges"
+                  :key="b.key"
+                  class="inline-flex items-center rounded-lg bg-white/10 px-2 py-1 text-[11px] font-semibold text-white ring-1 ring-white/10"
+                  :title="b.subtitle"
+                >
+                  {{ b.label }}
+                </span>
+              </div>
+            </div>
+
+            <div class="mt-5">
+              <div class="text-xs font-semibold text-white/70">Pendientes</div>
+              <div
+                v-if="!pendingAchievements.length"
+                class="mt-2 rounded-xl border border-white/10 bg-black/20 p-4 text-sm text-white/70"
+              >
+                No tienes pendientes ahora mismo.
+              </div>
+
+              <ul v-else class="mt-2 space-y-2">
+                <li
+                  v-for="a in pendingAchievements"
+                  :key="a.key"
+                  class="rounded-xl border border-white/10 bg-black/20 p-4"
+                >
+                  <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                      <div class="text-sm font-semibold text-white">
+                        {{ a.label }}
+                      </div>
+                      <div class="mt-1 text-xs text-white/60">
+                        {{ a.hint }}
+                      </div>
+                    </div>
+                    <div class="text-xs font-semibold text-white/70">
+                      {{ a.progressText }}
+                    </div>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </template>
+        </div>
+      </div>
     </div>
   </BasePage>
 </template>
@@ -424,11 +816,11 @@
 import { computed, ref, watch } from "vue";
 import { auth, db } from "../firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
+import { sendEmailVerification } from "firebase/auth";
 import BasePage from "./BasePage.vue";
 import { toast } from "../services/toasts";
 import ConfirmModal from "./ConfirmModal.vue";
 import {
-  PROFILE_ACCENT_OPTIONS,
   PROFILE_BANNER_OPTIONS,
   getProfileAccent,
   getProfileBannerLayers,
@@ -436,7 +828,13 @@ import {
   isProfileBannerKey,
 } from "../services/profileDecor";
 import {
+  LEAGUE_ICON_OPTIONS,
+  isLeagueIconKey,
+  leagueIconEmoji,
+} from "../services/leagueIcons";
+import {
   fetchLeagueAthleteAchievementsFirestore,
+  fetchMyLeaguesFirestore,
   fetchUserApprovedPointRequestsFirestore,
 } from "../services/leaguesFirestore";
 
@@ -453,14 +851,33 @@ const info = ref("");
 
 const confirmLogoutOpen = ref(false);
 
+const iconPickerOpen = ref(false);
+const achievementsOpen = ref(false);
+const achievementsLoading = ref(false);
+
 const nombre = ref("");
 const apodo = ref("");
 const fechaNacimiento = ref("");
 const profileEmoji = ref("");
+const profileIconKey = ref("");
 const profileBanner = ref("classic");
 const profileAccent = ref("emerald");
+const profileIconColor = ref("#D1FAE5");
+const profileTextColor = ref("#6EE7B7");
 const status = ref("");
 const bio = ref("");
+
+const showGlobalBadges = ref(true);
+const showLeagueBadges = ref(true);
+const showFavoriteLeague = ref(false);
+const showBestAchievements = ref(false);
+const favoriteLeagueId = ref("");
+const favoriteLeagueName = ref("");
+const favoriteLeagueIconKey = ref("");
+
+const myLeaguesLoading = ref(false);
+const myLeaguesError = ref("");
+const myLeagues = ref([]);
 
 const badgesLoading = ref(false);
 const badgesError = ref("");
@@ -469,6 +886,25 @@ const badges = ref([]);
 const globalBadgesLoading = ref(false);
 const globalBadgesError = ref("");
 const globalBadges = ref([]);
+
+const pendingAchievements = ref([]);
+
+const verifyBusy = ref(false);
+
+const PROFILE_ICON_OPTIONS = LEAGUE_ICON_OPTIONS;
+
+function isHex6(s) {
+  return /^#[0-9a-fA-F]{6}$/.test(String(s || ""));
+}
+
+function defaultColorsFromAccent(key) {
+  const k = String(key || "emerald");
+  if (k === "sky") return { icon: "#E0F2FE", text: "#7DD3FC" };
+  if (k === "rose") return { icon: "#FFE4E6", text: "#FDA4AF" };
+  if (k === "neutral") return { icon: "#FFFFFF", text: "#FFFFFF" };
+  // emerald (default)
+  return { icon: "#D1FAE5", text: "#6EE7B7" };
+}
 
 const viewingUid = computed(() => {
   const u = String(props.uid || "").trim();
@@ -512,15 +948,67 @@ const bannerLayers = computed(() =>
 );
 
 const profileBadge = computed(() => {
-  const e = String(profileEmoji.value || "").trim();
-  if (e) return e;
+  const icon = leagueIconEmoji(profileIconKey.value);
+  if (icon) return icon;
+  const legacy = String(profileEmoji.value || "").trim();
+  if (legacy) return legacy;
   const n = String(displayName.value || "").trim();
   if (!n) return "·";
   return n.slice(0, 1).toUpperCase();
 });
 
+const badgeTextStyle = computed(() => {
+  return isHex6(profileIconColor.value)
+    ? { color: profileIconColor.value }
+    : {};
+});
+
+const titleTextStyle = computed(() => {
+  return isHex6(profileTextColor.value)
+    ? { color: profileTextColor.value }
+    : {};
+});
+
 const email = computed(() => auth.currentUser?.email ?? "—");
 const emailVerified = computed(() => auth.currentUser?.emailVerified ?? false);
+
+const favoriteLeagueDisplay = computed(() => {
+  const name = String(favoriteLeagueName.value || "").trim();
+  const emoji = leagueIconEmoji(favoriteLeagueIconKey.value);
+  const out = `${emoji ? `${emoji} ` : ""}${name}`.trim();
+  return out;
+});
+
+const favoriteLeagueMissing = computed(() => {
+  if (!isSelf.value) return false;
+  if (myLeaguesLoading.value) return false;
+  if (myLeaguesError.value) return false;
+  const id = String(favoriteLeagueId.value || "").trim();
+  if (!id) return false;
+  const list = Array.isArray(myLeagues.value) ? myLeagues.value : [];
+  return !list.some((x) => String(x?.id || "").trim() === id);
+});
+
+const bestAchievements = computed(() => {
+  const rows = Array.isArray(globalBadges.value) ? globalBadges.value : [];
+  const weight = (key) => {
+    const k = String(key || "");
+    if (k === "g100") return 100;
+    if (k === "g50") return 90;
+    if (k === "g10") return 80;
+    if (k === "m60") return 70;
+    if (k === "m30") return 65;
+    if (k === "m10") return 60;
+    if (k === "s30") return 55;
+    if (k === "s7") return 50;
+    if (k === "s3") return 45;
+    if (k === "decor") return 10;
+    if (k === "bio") return 5;
+    return 20;
+  };
+
+  return [...rows].sort((a, b) => weight(b?.key) - weight(a?.key)).slice(0, 3);
+});
 
 async function load() {
   error.value = "";
@@ -541,14 +1029,59 @@ async function load() {
       apodo.value = data?.apodo ?? "";
       fechaNacimiento.value = data?.fechaNacimiento ?? "";
       profileEmoji.value = data?.profileEmoji ?? "";
+      const loadedIconKey = String(data?.profileIconKey || "").trim();
+      profileIconKey.value = isLeagueIconKey(loadedIconKey)
+        ? loadedIconKey
+        : "";
       profileBanner.value = isProfileBannerKey(data?.profileBanner)
         ? data.profileBanner
         : "classic";
       profileAccent.value = isProfileAccentKey(data?.profileAccent)
         ? data.profileAccent
         : "emerald";
+
+      const defaults = defaultColorsFromAccent(profileAccent.value);
+      const iconC = String(data?.profileIconColor || "").trim();
+      const textC = String(data?.profileTextColor || "").trim();
+      profileIconColor.value = isHex6(iconC) ? iconC : defaults.icon;
+      profileTextColor.value = isHex6(textC) ? textC : defaults.text;
+
       status.value = String(data?.status ?? "").slice(0, 40);
       bio.value = String(data?.bio ?? "").slice(0, 200);
+
+      const blocks = data?.profileBlocks || {};
+      showGlobalBadges.value =
+        typeof blocks?.showGlobalBadges === "boolean"
+          ? blocks.showGlobalBadges
+          : true;
+      showLeagueBadges.value =
+        typeof blocks?.showLeagueBadges === "boolean"
+          ? blocks.showLeagueBadges
+          : true;
+      showFavoriteLeague.value =
+        typeof blocks?.showFavoriteLeague === "boolean"
+          ? blocks.showFavoriteLeague
+          : false;
+      showBestAchievements.value =
+        typeof blocks?.showBestAchievements === "boolean"
+          ? blocks.showBestAchievements
+          : false;
+
+      favoriteLeagueId.value = String(data?.favoriteLeagueId ?? "").trim();
+      favoriteLeagueName.value = String(data?.favoriteLeagueName ?? "")
+        .trim()
+        .slice(0, 80);
+
+      const favIcon = String(data?.favoriteLeagueIconKey ?? "").trim();
+      favoriteLeagueIconKey.value = isLeagueIconKey(favIcon) ? favIcon : "";
+
+      // Compatibilidad: antes era texto libre.
+      if (!favoriteLeagueName.value) {
+        const legacy = String(data?.favoriteLeagueText ?? "")
+          .trim()
+          .slice(0, 80);
+        if (legacy) favoriteLeagueName.value = legacy;
+      }
       toast.info("Perfil cargado", { timeoutMs: 1400 });
     }
   } catch (e) {
@@ -560,6 +1093,56 @@ async function load() {
 
   // Actualiza insignias globales cuando cambie el perfil.
   loadGlobalBadges();
+}
+
+function leagueOptionLabel(l) {
+  const name = String(l?.name || "").trim() || "Liga";
+  const emoji = leagueIconEmoji(String(l?.iconKey || "").trim());
+  const vis = l?.visibility === "private" ? " (Privada)" : "";
+  return `${emoji ? `${emoji} ` : ""}${name}${vis}`;
+}
+
+function syncFavoriteLeagueFromMyLeagues() {
+  const id = String(favoriteLeagueId.value || "").trim();
+  if (!id) {
+    favoriteLeagueName.value = "";
+    favoriteLeagueIconKey.value = "";
+    return;
+  }
+
+  const list = Array.isArray(myLeagues.value) ? myLeagues.value : [];
+  const found = list.find((x) => String(x?.id || "").trim() === id);
+  if (!found) return;
+
+  favoriteLeagueName.value = String(found?.name || "")
+    .trim()
+    .slice(0, 80);
+  const icon = String(found?.iconKey || "").trim();
+  favoriteLeagueIconKey.value = isLeagueIconKey(icon) ? icon : "";
+}
+
+async function loadMyLeaguesList() {
+  if (!isSelf.value) return;
+  myLeaguesError.value = "";
+  myLeaguesLoading.value = true;
+  try {
+    const list = await fetchMyLeaguesFirestore({ max: 100 });
+    myLeagues.value = [...(Array.isArray(list) ? list : [])].sort((a, b) =>
+      String(a?.name || "").localeCompare(String(b?.name || "")),
+    );
+    syncFavoriteLeagueFromMyLeagues();
+  } catch (e) {
+    myLeaguesError.value = e?.message || "No se pudieron cargar tus ligas";
+  } finally {
+    myLeaguesLoading.value = false;
+  }
+}
+
+function selectProfileIcon(key) {
+  profileIconKey.value = String(key || "").trim();
+  // mantenemos compatibilidad con profileEmoji, pero al elegir icono lo vaciamos.
+  profileEmoji.value = "";
+  iconPickerOpen.value = false;
 }
 
 function computeLeagueBadges({ uid, totalsByUid, topUid, role }) {
@@ -671,15 +1254,80 @@ function computeGlobalBadgesPublic() {
     });
   }
 
-  if (
-    String(profileEmoji.value || "").trim() ||
-    String(status.value || "").trim() ||
-    String(profileBanner.value || "").trim() !== "none"
-  ) {
+  const decorChecks = [
+    Boolean(String(bio.value || "").trim()),
+    Boolean(String(status.value || "").trim()),
+    String(profileBanner.value || "").trim() !== "none",
+    Boolean(
+      leagueIconEmoji(profileIconKey.value) ||
+      String(profileEmoji.value || "").trim(),
+    ),
+  ];
+  const decorScore = decorChecks.filter(Boolean).length;
+  const decorTotal = decorChecks.length;
+  if (decorScore > 0) {
     out.push({
       key: "decor",
-      label: "Perfil decorado",
-      subtitle: "Tiene decoración/estado configurado",
+      label: decorScore >= decorTotal ? "Decoración completa" : "Decoración",
+      subtitle:
+        decorScore >= decorTotal
+          ? "Tiene el perfil totalmente personalizado"
+          : `Personalización: ${decorScore}/${decorTotal}`,
+    });
+  }
+
+  return out;
+}
+
+function computePendingAchievements({
+  totalPts,
+  monthPts,
+  streakLongest,
+  decorScore,
+  decorTotal,
+}) {
+  const out = [];
+
+  const decorOk = decorScore >= decorTotal;
+  if (!decorOk) {
+    out.push({
+      key: "decor",
+      label: "Decoración del perfil",
+      hint: "Completa tu bio/estado/banner/icono para tener un perfil más completo.",
+      progressText: `${decorScore}/${decorTotal}`,
+    });
+  }
+
+  const totalTargets = [10, 50, 100];
+  for (const t of totalTargets) {
+    if (totalPts >= t) continue;
+    out.push({
+      key: `total_${t}`,
+      label: `${t}+ puntos (total)`,
+      hint: `Te faltan ${t - totalPts} puntos aprobados.`,
+      progressText: `${totalPts}/${t}`,
+    });
+  }
+
+  const monthTargets = [10, 30, 60];
+  for (const t of monthTargets) {
+    if (monthPts >= t) continue;
+    out.push({
+      key: `month_${t}`,
+      label: `${t}+ puntos (mes)`,
+      hint: `Te faltan ${t - monthPts} puntos aprobados este mes.`,
+      progressText: `${monthPts}/${t}`,
+    });
+  }
+
+  const streakTargets = [3, 7, 30];
+  for (const t of streakTargets) {
+    if (streakLongest >= t) continue;
+    out.push({
+      key: `streak_${t}`,
+      label: `Racha ${t}+ (máxima)`,
+      hint: `Tu racha máxima es ${streakLongest} días.`,
+      progressText: `${streakLongest}/${t}`,
     });
   }
 
@@ -697,7 +1345,8 @@ function computeGlobalBadgesSelfFromApprovedRequests(rows) {
   const ym = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
 
   for (const r of safeRows) {
-    const pts = typeof r?.points === "number" ? r.points : Number(r?.points || 0);
+    const pts =
+      typeof r?.points === "number" ? r.points : Number(r?.points || 0);
     const n = Number.isFinite(pts) ? pts : 0;
     totalPts += n;
     const day = String(r?.performedOn || "");
@@ -708,25 +1357,61 @@ function computeGlobalBadgesSelfFromApprovedRequests(rows) {
   const streak = computeStreakFromDateStrings(performedOnList);
 
   if (totalPts >= 10)
-    out.push({ key: "g10", label: "10+ puntos", subtitle: "Total global: 10+ puntos aprobados" });
+    out.push({
+      key: "g10",
+      label: "10+ puntos",
+      subtitle: "Total global: 10+ puntos aprobados",
+    });
   if (totalPts >= 50)
-    out.push({ key: "g50", label: "50+ puntos", subtitle: "Total global: 50+ puntos aprobados" });
+    out.push({
+      key: "g50",
+      label: "50+ puntos",
+      subtitle: "Total global: 50+ puntos aprobados",
+    });
   if (totalPts >= 100)
-    out.push({ key: "g100", label: "100+ puntos", subtitle: "Total global: 100+ puntos aprobados" });
+    out.push({
+      key: "g100",
+      label: "100+ puntos",
+      subtitle: "Total global: 100+ puntos aprobados",
+    });
 
   if (monthPts >= 10)
-    out.push({ key: "m10", label: "Mes: 10+", subtitle: "Este mes: 10+ puntos aprobados" });
+    out.push({
+      key: "m10",
+      label: "Mes: 10+",
+      subtitle: "Este mes: 10+ puntos aprobados",
+    });
   if (monthPts >= 30)
-    out.push({ key: "m30", label: "Mes: 30+", subtitle: "Este mes: 30+ puntos aprobados" });
+    out.push({
+      key: "m30",
+      label: "Mes: 30+",
+      subtitle: "Este mes: 30+ puntos aprobados",
+    });
   if (monthPts >= 60)
-    out.push({ key: "m60", label: "Mes: 60+", subtitle: "Este mes: 60+ puntos aprobados" });
+    out.push({
+      key: "m60",
+      label: "Mes: 60+",
+      subtitle: "Este mes: 60+ puntos aprobados",
+    });
 
   if (streak.longest >= 3)
-    out.push({ key: "s3", label: "Racha 3+", subtitle: `Racha máxima: ${streak.longest} días` });
+    out.push({
+      key: "s3",
+      label: "Racha 3+",
+      subtitle: `Racha máxima: ${streak.longest} días`,
+    });
   if (streak.longest >= 7)
-    out.push({ key: "s7", label: "Racha 7+", subtitle: `Racha máxima: ${streak.longest} días` });
+    out.push({
+      key: "s7",
+      label: "Racha 7+",
+      subtitle: `Racha máxima: ${streak.longest} días`,
+    });
   if (streak.longest >= 30)
-    out.push({ key: "s30", label: "Racha 30+", subtitle: `Racha máxima: ${streak.longest} días` });
+    out.push({
+      key: "s30",
+      label: "Racha 30+",
+      subtitle: `Racha máxima: ${streak.longest} días`,
+    });
 
   return out;
 }
@@ -734,6 +1419,7 @@ function computeGlobalBadgesSelfFromApprovedRequests(rows) {
 async function loadGlobalBadges() {
   globalBadgesError.value = "";
   globalBadges.value = [];
+  pendingAchievements.value = [];
 
   const uid = viewingUid.value;
   if (!uid) return;
@@ -745,13 +1431,70 @@ async function loadGlobalBadges() {
   }
 
   globalBadgesLoading.value = true;
+  achievementsLoading.value = true;
   try {
-    const rows = await fetchUserApprovedPointRequestsFirestore({ uid, max: 800 });
+    const rows = await fetchUserApprovedPointRequestsFirestore({
+      uid,
+      max: 800,
+    });
     globalBadges.value = computeGlobalBadgesSelfFromApprovedRequests(rows);
+
+    // Stats para pendientes
+    const safeRows = Array.isArray(rows) ? rows : [];
+    let totalPts = 0;
+    let monthPts = 0;
+    const performedOnList = [];
+    const now = new Date();
+    const ym = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
+    for (const r of safeRows) {
+      const pts =
+        typeof r?.points === "number" ? r.points : Number(r?.points || 0);
+      const n = Number.isFinite(pts) ? pts : 0;
+      totalPts += n;
+      const day = String(r?.performedOn || "");
+      if (day) performedOnList.push(day);
+      if (day.startsWith(ym)) monthPts += n;
+    }
+    const streak = computeStreakFromDateStrings(performedOnList);
+
+    const decorChecks = [
+      Boolean(String(bio.value || "").trim()),
+      Boolean(String(status.value || "").trim()),
+      String(profileBanner.value || "").trim() !== "none",
+      Boolean(
+        leagueIconEmoji(profileIconKey.value) ||
+        String(profileEmoji.value || "").trim(),
+      ),
+    ];
+    const decorScore = decorChecks.filter(Boolean).length;
+    const decorTotal = decorChecks.length;
+    pendingAchievements.value = computePendingAchievements({
+      totalPts,
+      monthPts,
+      streakLongest: streak.longest,
+      decorScore,
+      decorTotal,
+    });
   } catch (e) {
     globalBadgesError.value = e?.message || "No se pudieron cargar insignias";
   } finally {
     globalBadgesLoading.value = false;
+    achievementsLoading.value = false;
+  }
+}
+
+async function sendVerifyEmail() {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  verifyBusy.value = true;
+  try {
+    await sendEmailVerification(user);
+    toast.success("Te hemos enviado un correo de verificación.");
+  } catch (e) {
+    toast.error(e?.message || "No se pudo enviar el email");
+  } finally {
+    verifyBusy.value = false;
   }
 }
 
@@ -811,6 +1554,16 @@ async function onSave() {
 
   busy.value = true;
   try {
+    // Asegura que nombre/icono estén sincronizados con el selector.
+    syncFavoriteLeagueFromMyLeagues();
+
+    // Si se ha borrado/abandonado la liga, limpiamos la selección.
+    if (showFavoriteLeague.value && favoriteLeagueMissing.value) {
+      favoriteLeagueId.value = "";
+      favoriteLeagueName.value = "";
+      favoriteLeagueIconKey.value = "";
+    }
+
     await setDoc(
       doc(db, "users", user.uid),
       {
@@ -818,14 +1571,39 @@ async function onSave() {
         apodo: apodo.value,
         fechaNacimiento: fechaNacimiento.value,
         profileEmoji: String(profileEmoji.value || "").trim(),
+        profileIconKey: String(profileIconKey.value || "").trim(),
         profileBanner: String(profileBanner.value || "classic"),
         profileAccent: String(profileAccent.value || "emerald"),
+        profileIconColor: isHex6(profileIconColor.value)
+          ? profileIconColor.value
+          : defaultColorsFromAccent(profileAccent.value).icon,
+        profileTextColor: isHex6(profileTextColor.value)
+          ? profileTextColor.value
+          : defaultColorsFromAccent(profileAccent.value).text,
         status: String(status.value || "")
           .trim()
           .slice(0, 40),
         bio: String(bio.value || "")
           .trim()
           .slice(0, 200),
+        profileBlocks: {
+          showGlobalBadges: !!showGlobalBadges.value,
+          showLeagueBadges: !!showLeagueBadges.value,
+          showFavoriteLeague: !!showFavoriteLeague.value,
+          showBestAchievements: !!showBestAchievements.value,
+        },
+        favoriteLeagueId: String(favoriteLeagueId.value || "").trim(),
+        favoriteLeagueName: String(favoriteLeagueName.value || "")
+          .trim()
+          .slice(0, 80),
+        favoriteLeagueIconKey: String(favoriteLeagueIconKey.value || "")
+          .trim()
+          .slice(0, 40),
+
+        // Compatibilidad con versiones anteriores (cuando era texto libre)
+        favoriteLeagueText: String(favoriteLeagueName.value || "")
+          .trim()
+          .slice(0, 80),
         updatedAt: new Date().toISOString(),
       },
       { merge: true },
@@ -864,4 +1642,18 @@ watch(
   },
   { immediate: true },
 );
+
+watch(
+  [isSelf, showFavoriteLeague],
+  () => {
+    if (isSelf.value && showFavoriteLeague.value) {
+      loadMyLeaguesList();
+    }
+  },
+  { immediate: true },
+);
+
+watch(favoriteLeagueId, () => {
+  syncFavoriteLeagueFromMyLeagues();
+});
 </script>
