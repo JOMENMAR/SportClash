@@ -31,7 +31,7 @@
             class="inline-flex items-center gap-2 rounded-xl bg-emerald-300 px-4 py-2 text-sm font-semibold text-gray-950 ring-1 ring-emerald-200/30 hover:opacity-95 transition active:scale-[0.98]"
             @click="$emit('create-league')"
           >
-            <span v-html="iconSvg('plus')" />
+            <PlusIcon class="w-4 h-4" />
             Crear liga
           </button>
           <button
@@ -39,7 +39,7 @@
             class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white transition rounded-xl bg-white/10 ring-1 ring-white/10 hover:bg-white/15"
             @click="$emit('open-global')"
           >
-            <span v-html="iconSvg('link')" />
+            <LinkIcon class="w-4 h-4" />
             Explorar ligas
           </button>
         </div>
@@ -95,8 +95,13 @@
                     class="mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-300/15 ring-1 ring-emerald-200/20"
                     aria-hidden
                   >
-                    <span class="text-lg text-emerald-100">{{
-                      leagueBadge(recentLeague)
+                    <component
+                      v-if="leagueBadgeIcon(recentLeague)"
+                      :is="leagueBadgeIcon(recentLeague)"
+                      class="h-5 w-5 text-emerald-100"
+                    />
+                    <span v-else class="text-lg text-emerald-100">{{
+                      leagueBadgeTextFallback(recentLeague)
                     }}</span>
                   </div>
 
@@ -153,10 +158,7 @@
                     class="mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-300/15 ring-1 ring-emerald-200/20"
                     aria-hidden
                   >
-                    <span
-                      class="text-emerald-200"
-                      v-html="iconSvg('leagues')"
-                    />
+                    <RectangleStackIcon class="w-5 h-5 text-emerald-200" />
                   </div>
 
                   <div>
@@ -183,7 +185,10 @@
                       : $emit('create-league')
                   "
                 >
-                  <span v-html="iconSvg(recentLeague ? 'leagues' : 'plus')" />
+                  <component
+                    :is="recentLeague ? RectangleStackIcon : PlusIcon"
+                    class="w-4 h-4"
+                  />
                   {{ recentLeague ? "Entrar a la liga" : "Crear liga" }}
                 </button>
                 <button
@@ -196,7 +201,10 @@
                       : $emit('open-global')
                   "
                 >
-                  <span v-html="iconSvg(recentLeague ? 'plus' : 'link')" />
+                  <component
+                    :is="recentLeague ? PlusIcon : LinkIcon"
+                    class="w-4 h-4"
+                  />
                   {{ recentLeague ? "Registrar punto" : "Explorar ligas" }}
                 </button>
               </div>
@@ -434,7 +442,12 @@ import { computed, onMounted, ref, watch } from "vue";
 import { useLeaguesStore } from "../services/leaguesStore";
 import { fetchLeagueAthleteAchievementsFirestore } from "../services/leaguesFirestore";
 import { fetchUserProfileLabel } from "../services/userProfiles";
-import { leagueBadgeText } from "../services/leagueIcons";
+import { leagueBadgeSpec } from "../services/leagueIcons";
+import {
+  LinkIcon,
+  PlusIcon,
+  RectangleStackIcon,
+} from "@heroicons/vue/24/solid";
 
 defineEmits([
   "create-league",
@@ -515,23 +528,15 @@ function userLabel(uid) {
   return n || "Atleta";
 }
 
-function leagueBadge(league) {
-  return (
-    leagueBadgeText({ name: league?.name, iconKey: league?.iconKey }) || "·"
-  );
+function leagueBadgeIcon(league) {
+  return leagueBadgeSpec({ name: league?.name, iconKey: league?.iconKey }).icon;
 }
 
-function iconSvg(name) {
-  if (name === "plus") {
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4"><path d="M10 4a1 1 0 011 1v4h4a1 1 0 110 2h-4v4a1 1 0 11-2 0v-4H5a1 1 0 110-2h4V5a1 1 0 011-1z"/></svg>`;
-  }
-  if (name === "link") {
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4"><path d="M12.586 7.414a2 2 0 010 2.828l-2.344 2.344a2 2 0 01-2.828 0 .999.999 0 111.414-1.414l2.344-2.344a1 1 0 10-1.414-1.414L7.414 10A4 4 0 1013 15.586l1.414-1.414A4 4 0 109.586 6L8.172 7.414a1 1 0 01-1.414-1.414L8.172 4.586A6 6 0 1116.414 12.828L15 14.242A6 6 0 116.758 6l1.414-1.414A1 1 0 119.586 6L12.586 7.414z"/></svg>`;
-  }
-  if (name === "leagues") {
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4"><path d="M4 3.5A1.5 1.5 0 015.5 2h9A1.5 1.5 0 0116 3.5v12A1.5 1.5 0 0114.5 17h-9A1.5 1.5 0 014 15.5v-12zM6 6a1 1 0 100 2h8a1 1 0 100-2H6zm0 4a1 1 0 100 2h6a1 1 0 100-2H6z"/></svg>`;
-  }
-  return "";
+function leagueBadgeTextFallback(league) {
+  return (
+    leagueBadgeSpec({ name: league?.name, iconKey: league?.iconKey }).text ||
+    "·"
+  );
 }
 
 onMounted(async () => {

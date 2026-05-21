@@ -1,39 +1,56 @@
 // Catálogo de iconos (deportes) para ligas.
-// Guardamos en Firestore un `iconKey` (string). El UI lo traduce a emoji.
+// Guardamos en Firestore un `iconKey` (string). El UI lo traduce a Heroicons.
+
+import {
+  AcademicCapIcon,
+  ArrowPathIcon,
+  BoltIcon,
+  FireIcon,
+  GlobeAltIcon,
+  HeartIcon,
+  LifebuoyIcon,
+  MapIcon,
+  MusicalNoteIcon,
+  ScaleIcon,
+  ShieldCheckIcon,
+  SparklesIcon,
+  TrophyIcon,
+  UserGroupIcon,
+} from "@heroicons/vue/24/solid";
 
 export const LEAGUE_ICON_OPTIONS = [
-  { key: "weights", label: "Gym / Pesas", emoji: "🏋️" },
-  { key: "running", label: "Running", emoji: "🏃" },
-  { key: "cycling", label: "Ciclismo", emoji: "🚴" },
-  { key: "swimming", label: "Natación", emoji: "🏊" },
-  { key: "yoga", label: "Yoga", emoji: "🧘" },
-  { key: "pilates", label: "Pilates", emoji: "🤸" },
-  { key: "crossfit", label: "CrossFit", emoji: "🏋️‍♀️" },
-  { key: "boxing", label: "Boxeo", emoji: "🥊" },
-  { key: "martial", label: "Artes marciales", emoji: "🥋" },
-  { key: "soccer", label: "Fútbol", emoji: "⚽" },
-  { key: "basketball", label: "Baloncesto", emoji: "🏀" },
-  { key: "tennis", label: "Tenis", emoji: "🎾" },
-  { key: "padel", label: "Pádel", emoji: "🎾" },
-  { key: "volleyball", label: "Voleibol", emoji: "🏐" },
-  { key: "handball", label: "Balonmano", emoji: "🤾" },
-  { key: "baseball", label: "Béisbol", emoji: "⚾" },
-  { key: "rugby", label: "Rugby", emoji: "🏉" },
-  { key: "football", label: "Fútbol americano", emoji: "🏈" },
-  { key: "golf", label: "Golf", emoji: "⛳" },
-  { key: "tabletennis", label: "Ping pong", emoji: "🏓" },
-  { key: "badminton", label: "Bádminton", emoji: "🏸" },
-  { key: "dance", label: "Baile", emoji: "💃" },
-  { key: "hiking", label: "Senderismo", emoji: "🥾" },
-  { key: "climbing", label: "Escalada", emoji: "🧗" },
-  { key: "ski", label: "Esquí", emoji: "⛷️" },
-  { key: "skate", label: "Skate", emoji: "🛹" },
-  { key: "row", label: "Remo", emoji: "🚣" },
-  { key: "surf", label: "Surf", emoji: "🏄" },
-  { key: "waterpolo", label: "Waterpolo", emoji: "🤽" },
-  { key: "triathlon", label: "Triatlón", emoji: "🏊‍♂️" },
-  { key: "medal", label: "Competición", emoji: "🏅" },
-  { key: "trophy", label: "Torneo", emoji: "🏆" },
+  { key: "weights", label: "Gym / Pesas", icon: ScaleIcon },
+  { key: "running", label: "Running", icon: BoltIcon },
+  { key: "cycling", label: "Ciclismo", icon: ArrowPathIcon },
+  { key: "swimming", label: "Natación", icon: LifebuoyIcon },
+  { key: "yoga", label: "Yoga", icon: SparklesIcon },
+  { key: "pilates", label: "Pilates", icon: HeartIcon },
+  { key: "crossfit", label: "CrossFit", icon: FireIcon },
+  { key: "boxing", label: "Boxeo", icon: ShieldCheckIcon },
+  { key: "martial", label: "Artes marciales", icon: ShieldCheckIcon },
+  { key: "soccer", label: "Fútbol", icon: GlobeAltIcon },
+  { key: "basketball", label: "Baloncesto", icon: UserGroupIcon },
+  { key: "tennis", label: "Tenis", icon: BoltIcon },
+  { key: "padel", label: "Pádel", icon: BoltIcon },
+  { key: "volleyball", label: "Voleibol", icon: UserGroupIcon },
+  { key: "handball", label: "Balonmano", icon: UserGroupIcon },
+  { key: "baseball", label: "Béisbol", icon: BoltIcon },
+  { key: "rugby", label: "Rugby", icon: ShieldCheckIcon },
+  { key: "football", label: "Fútbol americano", icon: ShieldCheckIcon },
+  { key: "golf", label: "Golf", icon: MapIcon },
+  { key: "tabletennis", label: "Ping pong", icon: BoltIcon },
+  { key: "badminton", label: "Bádminton", icon: BoltIcon },
+  { key: "dance", label: "Baile", icon: MusicalNoteIcon },
+  { key: "hiking", label: "Senderismo", icon: MapIcon },
+  { key: "climbing", label: "Escalada", icon: MapIcon },
+  { key: "ski", label: "Esquí", icon: MapIcon },
+  { key: "skate", label: "Skate", icon: BoltIcon },
+  { key: "row", label: "Remo", icon: ArrowPathIcon },
+  { key: "surf", label: "Surf", icon: LifebuoyIcon },
+  { key: "waterpolo", label: "Waterpolo", icon: LifebuoyIcon },
+  { key: "triathlon", label: "Triatlón", icon: AcademicCapIcon },
+  { key: "medal", label: "Competición", icon: TrophyIcon },
+  { key: "trophy", label: "Torneo", icon: TrophyIcon },
 ];
 
 const ICON_BY_KEY = LEAGUE_ICON_OPTIONS.reduce((acc, it) => {
@@ -47,9 +64,9 @@ export function isLeagueIconKey(iconKey) {
   return Boolean(ICON_BY_KEY[k]);
 }
 
-export function leagueIconEmoji(iconKey) {
+export function leagueIconComponent(iconKey) {
   const k = String(iconKey || "").trim();
-  return ICON_BY_KEY[k]?.emoji || "";
+  return ICON_BY_KEY[k]?.icon || null;
 }
 
 export function leagueInitial(name) {
@@ -59,7 +76,11 @@ export function leagueInitial(name) {
 }
 
 export function leagueBadgeText({ name, iconKey } = {}) {
-  const emoji = leagueIconEmoji(iconKey);
-  if (emoji) return emoji;
   return leagueInitial(name);
+}
+
+export function leagueBadgeSpec({ name, iconKey } = {}) {
+  const icon = leagueIconComponent(iconKey);
+  if (icon) return { kind: "icon", icon, text: "" };
+  return { kind: "text", icon: null, text: leagueInitial(name) };
 }

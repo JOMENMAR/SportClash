@@ -32,7 +32,14 @@
                 class="mt-0.5 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-300/15 ring-1 ring-emerald-200/20"
                 aria-hidden
               >
-                <span class="text-lg text-emerald-100">{{ previewBadge }}</span>
+                <component
+                  v-if="previewSpec.kind === 'icon'"
+                  :is="previewSpec.icon"
+                  class="h-6 w-6 text-emerald-100"
+                />
+                <span v-else class="text-lg text-emerald-100">{{
+                  previewSpec.text || "·"
+                }}</span>
               </div>
 
               <div class="flex-1">
@@ -46,7 +53,7 @@
                     :key="opt.key"
                     :value="opt.key"
                   >
-                    {{ opt.emoji }} {{ opt.label }}
+                    {{ opt.label }}
                   </option>
                 </select>
                 <p class="mt-1 text-xs text-white/50">
@@ -145,7 +152,7 @@ import { computed, ref } from "vue";
 import { useLeaguesStore } from "../services/leaguesStore";
 import BasePage from "./BasePage.vue";
 import { toast } from "../services/toasts";
-import { LEAGUE_ICON_OPTIONS, leagueBadgeText } from "../services/leagueIcons";
+import { LEAGUE_ICON_OPTIONS, leagueBadgeSpec } from "../services/leagueIcons";
 
 const emit = defineEmits(["back", "created"]);
 const store = useLeaguesStore();
@@ -157,8 +164,8 @@ const iconKey = ref("");
 
 const iconOptions = LEAGUE_ICON_OPTIONS;
 
-const previewBadge = computed(() => {
-  return leagueBadgeText({ name: name.value, iconKey: iconKey.value }) || "·";
+const previewSpec = computed(() => {
+  return leagueBadgeSpec({ name: name.value, iconKey: iconKey.value });
 });
 
 const busy = ref(false);

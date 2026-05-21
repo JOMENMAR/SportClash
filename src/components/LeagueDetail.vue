@@ -19,8 +19,13 @@
                 class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-300/15 ring-1 ring-emerald-200/20 shrink-0"
                 aria-hidden
               >
-                <span class="text-lg text-emerald-100">{{
-                  leagueBadge(league)
+                <component
+                  v-if="leagueBadgeIcon(league)"
+                  :is="leagueBadgeIcon(league)"
+                  class="h-6 w-6 text-emerald-100"
+                />
+                <span v-else class="text-lg text-emerald-100">{{
+                  leagueBadgeTextFallback(league)
                 }}</span>
               </div>
 
@@ -79,7 +84,7 @@
             "
             @click="activeTab = t.key"
           >
-            <span class="text-current" v-html="tabIconSvg(t.icon)" />
+            <component :is="t.icon" class="w-4 h-4 text-current" />
             {{ t.label }}
           </button>
         </div>
@@ -1015,7 +1020,14 @@ import {
 import BasePage from "./BasePage.vue";
 import { auth } from "../firebase";
 import { fetchUserProfileLabels } from "../services/userProfiles";
-import { leagueBadgeText } from "../services/leagueIcons";
+import { leagueBadgeSpec } from "../services/leagueIcons";
+import {
+  BoltIcon,
+  ClockIcon,
+  LinkIcon,
+  TrophyIcon,
+  UserGroupIcon,
+} from "@heroicons/vue/24/solid";
 
 const emit = defineEmits([
   "back",
@@ -1303,9 +1315,14 @@ function userLabel(uid) {
   return name ? name : "Atleta";
 }
 
-function leagueBadge(league) {
+function leagueBadgeIcon(league) {
+  return leagueBadgeSpec({ name: league?.name, iconKey: league?.iconKey }).icon;
+}
+
+function leagueBadgeTextFallback(league) {
   return (
-    leagueBadgeText({ name: league?.name, iconKey: league?.iconKey }) || "·"
+    leagueBadgeSpec({ name: league?.name, iconKey: league?.iconKey }).text ||
+    "·"
   );
 }
 
@@ -1324,43 +1341,23 @@ const roleLabel = computed(() => {
 
 const tabs = computed(() => {
   const base = [
-    { key: "athletes", label: "Atletas", icon: "users" },
-    { key: "points", label: "Puntos", icon: "bolt" },
-    { key: "ranking", label: "Ranking", icon: "trophy" },
+    { key: "athletes", label: "Atletas", icon: UserGroupIcon },
+    { key: "points", label: "Puntos", icon: BoltIcon },
+    { key: "ranking", label: "Ranking", icon: TrophyIcon },
   ];
 
   if (membership.value) {
-    base.push({ key: "history", label: "Historial", icon: "clock" });
+    base.push({ key: "history", label: "Historial", icon: ClockIcon });
     if (
       membership.value.role === "owner" ||
       membership.value.role === "admin"
     ) {
-      base.push({ key: "join", label: "Uniones", icon: "link" });
+      base.push({ key: "join", label: "Uniones", icon: LinkIcon });
     }
   }
 
   return base;
 });
-
-function tabIconSvg(name) {
-  // Inline SVGs (no deps)
-  if (name === "users") {
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4"><path d="M13 7a3 3 0 11-6 0 3 3 0 016 0z"/><path fill-rule="evenodd" d="M5 14a4 4 0 018 0v1a1 1 0 11-2 0v-1a2 2 0 10-4 0v1a1 1 0 11-2 0v-1z" clip-rule="evenodd"/><path d="M14.5 7.5a2.5 2.5 0 11-1.5 4.55A4.98 4.98 0 0013 10a4.98 4.98 0 00-1.16-3.2A2.5 2.5 0 0114.5 7.5z"/><path d="M14 14a3 3 0 00-1.1-2.3 1 1 0 011.27-1.54A5 5 0 0118 14v1a1 1 0 11-2 0v-1z"/></svg>`;
-  }
-  if (name === "bolt") {
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4"><path d="M11.3 1.046a1 1 0 00-1.6.8V8H6.2a1 1 0 00-.8 1.6l5.8 9.354a1 1 0 001.6-.8V12h3.5a1 1 0 00.8-1.6L11.3 1.046z"/></svg>`;
-  }
-  if (name === "trophy") {
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4"><path fill-rule="evenodd" d="M7 2a1 1 0 00-1 1v1H4a1 1 0 00-1 1v1a4 4 0 003 3.874V11a4 4 0 003 3.874V16H7a1 1 0 100 2h6a1 1 0 100-2h-2v-1.126A4 4 0 0014 11V9.874A4 4 0 0017 6V5a1 1 0 00-1-1h-2V3a1 1 0 00-1-1H7zm-1 5.732A2 2 0 015 6V6h1v2.732zM14 6v2.732A2 2 0 0015 6V6h-1z" clip-rule="evenodd"/></svg>`;
-  }
-  if (name === "clock") {
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v4c0 .265.105.52.293.707l2 2a1 1 0 101.414-1.414L11 10.586V7z" clip-rule="evenodd"/></svg>`;
-  }
-  if (name === "link") {
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4"><path fill-rule="evenodd" d="M12.586 2.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 .75.75 0 111.06-1.06 0.5 0.5 0 00.708 0l3-3a.5.5 0 10-.708-.708l-3 3a2 2 0 01-2.828 0 2 2 0 010-2.828l3-3z" clip-rule="evenodd"/><path fill-rule="evenodd" d="M7.414 17.414a2 2 0 11-2.828-2.828l3-3a2 2 0 012.828 0 .75.75 0 11-1.06 1.06.5.5 0 00-.708 0l-3 3a.5.5 0 10.708.708l3-3a2 2 0 012.828 0 2 2 0 010 2.828l-3 3z" clip-rule="evenodd"/><path d="M7.75 12.25a.75.75 0 010-1.5h4.5a.75.75 0 010 1.5h-4.5z"/></svg>`;
-  }
-  return "";
-}
 
 const rejectedMyRequests = computed(() => {
   return (myRequests.value || [])

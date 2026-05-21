@@ -55,40 +55,10 @@
             tabindex="-1"
           >
             <template v-if="!showPass">
-              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"
-                  stroke="#a78bfa"
-                  stroke-width="2"
-                />
-                <circle
-                  cx="12"
-                  cy="12"
-                  r="3"
-                  stroke="#a78bfa"
-                  stroke-width="2"
-                />
-              </svg>
+              <EyeIcon class="w-5 h-5" />
             </template>
             <template v-else>
-              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none">
-                <path d="M3 3l18 18" stroke="#a78bfa" stroke-width="2" />
-                <path
-                  d="M10.58 10.58A3 3 0 0 0 12 15a3 3 0 0 0 2.42-4.42"
-                  stroke="#a78bfa"
-                  stroke-width="2"
-                />
-                <path
-                  d="M9.88 5.08A10.94 10.94 0 0 1 12 5c6.5 0 10 7 10 7a17.64 17.64 0 0 1-3.06 4.3"
-                  stroke="#a78bfa"
-                  stroke-width="2"
-                />
-                <path
-                  d="M6.11 6.11C3.61 8.05 2 12 2 12s3.5 7 10 7c1.2 0 2.32-.2 3.35-.55"
-                  stroke="#a78bfa"
-                  stroke-width="2"
-                />
-              </svg>
+              <EyeSlashIcon class="w-5 h-5" />
             </template>
           </button>
         </div>
@@ -113,7 +83,9 @@
         class="p-4 mb-4 border rounded-2xl border-rose-400/20 bg-rose-500/10"
       >
         <div class="flex items-start gap-3">
-          <div class="mt-0.5 text-lg">⚠️</div>
+          <div class="mt-0.5">
+            <ExclamationTriangleIcon class="w-5 h-5 text-rose-200" />
+          </div>
           <div class="min-w-0">
             <div class="text-sm font-semibold text-rose-100">
               {{ error }}
@@ -197,6 +169,11 @@ import {
   signInWithRedirect,
 } from "firebase/auth";
 import { group, groupEnd, error as logError } from "../services/logger";
+import {
+  ExclamationTriangleIcon,
+  EyeIcon,
+  EyeSlashIcon,
+} from "@heroicons/vue/24/outline";
 
 async function loginWithPopup(provider, label) {
   if (loading.value) return;

@@ -21,7 +21,15 @@
             :title="'Cambiar icono'"
             @click="iconPickerOpen = true"
           >
+            <component
+              v-if="profileIconComp"
+              :is="profileIconComp"
+              class="h-6 w-6"
+              :class="accent.badgeTextClass"
+              :style="badgeTextStyle"
+            />
             <span
+              v-else
               class="text-lg"
               :class="accent.badgeTextClass"
               :style="badgeTextStyle"
@@ -34,7 +42,15 @@
             :class="accent.badgeWrapClass"
             aria-hidden
           >
+            <component
+              v-if="profileIconComp"
+              :is="profileIconComp"
+              class="h-6 w-6"
+              :class="accent.badgeTextClass"
+              :style="badgeTextStyle"
+            />
             <span
+              v-else
               class="text-lg"
               :class="accent.badgeTextClass"
               :style="badgeTextStyle"
@@ -114,7 +130,20 @@
                 <div class="flex items-center justify-between gap-3">
                   <div class="min-w-0">
                     <div class="text-sm font-semibold text-white">
-                      {{ profileBadge }}
+                      <span class="inline-flex items-center gap-2">
+                        <component
+                          v-if="profileIconComp"
+                          :is="profileIconComp"
+                          class="h-5 w-5"
+                          :style="badgeTextStyle"
+                        />
+                        <span
+                          v-else
+                          class="inline-flex h-5 w-5 items-center justify-center"
+                          :style="badgeTextStyle"
+                          >{{ profileBadge }}</span
+                        >
+                      </span>
                       <span class="text-xs font-normal text-white/60">
                         (pulsa el icono de arriba para cambiarlo)
                       </span>
@@ -152,23 +181,6 @@
                     {{ o.label }}
                   </option>
                 </select>
-              </div>
-
-              <div>
-                <label class="text-sm text-white/70" for="p-icon-color"
-                  >Color del icono</label
-                >
-                <div class="mt-1 flex items-center gap-3">
-                  <input
-                    id="p-icon-color"
-                    v-model="profileIconColor"
-                    type="color"
-                    class="h-11 w-14 rounded-xl bg-white/10 ring-1 ring-white/10"
-                  />
-                  <div class="text-xs text-white/60">
-                    Se aplica al icono (la “M”/emoji elegido).
-                  </div>
-                </div>
               </div>
             </div>
 
@@ -265,23 +277,6 @@
                   <div v-else class="mt-1 text-xs text-white/60">
                     Elige una de tus ligas (pública o privada).
                   </div>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <label class="text-sm text-white/70" for="p-text-color"
-                >Color del texto</label
-              >
-              <div class="mt-1 flex items-center gap-3">
-                <input
-                  id="p-text-color"
-                  v-model="profileTextColor"
-                  type="color"
-                  class="h-11 w-14 rounded-xl bg-white/10 ring-1 ring-white/10"
-                />
-                <div class="text-xs text-white/60">
-                  Se aplica al título principal del perfil.
                 </div>
               </div>
             </div>
@@ -555,10 +550,17 @@
             <div
               class="mt-4 rounded-xl border border-white/10 bg-black/20 p-4 text-sm text-white/80"
             >
-              {{
-                favoriteLeagueDisplay ||
-                "Aún no has configurado tu liga favorita."
-              }}
+              <div v-if="favoriteLeagueName" class="flex items-center gap-2">
+                <component
+                  v-if="favoriteLeagueIconComp"
+                  :is="favoriteLeagueIconComp"
+                  class="h-5 w-5 text-white/80"
+                />
+                <span class="break-words">{{ favoriteLeagueName }}</span>
+              </div>
+              <template v-else>
+                Aún no has configurado tu liga favorita.
+              </template>
             </div>
           </div>
 
@@ -713,8 +715,52 @@
               @click="selectProfileIcon(it.key)"
               :title="it.label"
             >
-              {{ it.emoji }}
+              <component :is="it.icon" class="h-6 w-6 mx-auto" />
             </button>
+          </div>
+
+          <div class="mt-4 rounded-xl border border-white/10 bg-black/20 p-4">
+            <div class="text-sm font-semibold text-white">Colores</div>
+            <div class="mt-1 text-xs text-white/60">
+              Personaliza el color del icono (cuando no sea inicial) y del
+              título.
+            </div>
+
+            <div class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div>
+                <label class="text-sm text-white/70" for="modal-icon-color">
+                  Color del icono
+                </label>
+                <div class="mt-1 flex items-center gap-3">
+                  <input
+                    id="modal-icon-color"
+                    v-model="profileIconColor"
+                    type="color"
+                    class="h-11 w-14 rounded-xl bg-white/10 ring-1 ring-white/10"
+                  />
+                  <div class="text-xs text-white/60">
+                    Se aplica al icono (la “M” o icono mono-color).
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label class="text-sm text-white/70" for="modal-text-color">
+                  Color del texto
+                </label>
+                <div class="mt-1 flex items-center gap-3">
+                  <input
+                    id="modal-text-color"
+                    v-model="profileTextColor"
+                    type="color"
+                    class="h-11 w-14 rounded-xl bg-white/10 ring-1 ring-white/10"
+                  />
+                  <div class="text-xs text-white/60">
+                    Se aplica al título principal del perfil.
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -830,7 +876,7 @@ import {
 import {
   LEAGUE_ICON_OPTIONS,
   isLeagueIconKey,
-  leagueIconEmoji,
+  leagueIconComponent,
 } from "../services/leagueIcons";
 import {
   fetchLeagueAthleteAchievementsFirestore,
@@ -948,13 +994,13 @@ const bannerLayers = computed(() =>
 );
 
 const profileBadge = computed(() => {
-  const icon = leagueIconEmoji(profileIconKey.value);
-  if (icon) return icon;
-  const legacy = String(profileEmoji.value || "").trim();
-  if (legacy) return legacy;
   const n = String(displayName.value || "").trim();
   if (!n) return "·";
   return n.slice(0, 1).toUpperCase();
+});
+
+const profileIconComp = computed(() => {
+  return leagueIconComponent(profileIconKey.value);
 });
 
 const badgeTextStyle = computed(() => {
@@ -972,11 +1018,8 @@ const titleTextStyle = computed(() => {
 const email = computed(() => auth.currentUser?.email ?? "—");
 const emailVerified = computed(() => auth.currentUser?.emailVerified ?? false);
 
-const favoriteLeagueDisplay = computed(() => {
-  const name = String(favoriteLeagueName.value || "").trim();
-  const emoji = leagueIconEmoji(favoriteLeagueIconKey.value);
-  const out = `${emoji ? `${emoji} ` : ""}${name}`.trim();
-  return out;
+const favoriteLeagueIconComp = computed(() => {
+  return leagueIconComponent(favoriteLeagueIconKey.value);
 });
 
 const favoriteLeagueMissing = computed(() => {
@@ -1097,9 +1140,8 @@ async function load() {
 
 function leagueOptionLabel(l) {
   const name = String(l?.name || "").trim() || "Liga";
-  const emoji = leagueIconEmoji(String(l?.iconKey || "").trim());
   const vis = l?.visibility === "private" ? " (Privada)" : "";
-  return `${emoji ? `${emoji} ` : ""}${name}${vis}`;
+  return `${name}${vis}`;
 }
 
 function syncFavoriteLeagueFromMyLeagues() {
@@ -1259,7 +1301,7 @@ function computeGlobalBadgesPublic() {
     Boolean(String(status.value || "").trim()),
     String(profileBanner.value || "").trim() !== "none",
     Boolean(
-      leagueIconEmoji(profileIconKey.value) ||
+      leagueIconComponent(profileIconKey.value) ||
       String(profileEmoji.value || "").trim(),
     ),
   ];
@@ -1462,7 +1504,7 @@ async function loadGlobalBadges() {
       Boolean(String(status.value || "").trim()),
       String(profileBanner.value || "").trim() !== "none",
       Boolean(
-        leagueIconEmoji(profileIconKey.value) ||
+        leagueIconComponent(profileIconKey.value) ||
         String(profileEmoji.value || "").trim(),
       ),
     ];

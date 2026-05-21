@@ -118,8 +118,13 @@
                       class="mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-300/15 ring-1 ring-emerald-200/20 shrink-0"
                       aria-hidden
                     >
-                      <span class="text-lg text-emerald-100">{{
-                        leagueBadge(league)
+                      <component
+                        v-if="leagueBadgeIcon(league)"
+                        :is="leagueBadgeIcon(league)"
+                        class="h-5 w-5 text-emerald-100"
+                      />
+                      <span v-else class="text-lg text-emerald-100">{{
+                        leagueBadgeTextFallback(league)
                       }}</span>
                     </div>
 
@@ -168,7 +173,7 @@
 import { computed, onMounted } from "vue";
 import { useLeaguesStore } from "../services/leaguesStore";
 import BasePage from "./BasePage.vue";
-import { leagueBadgeText } from "../services/leagueIcons";
+import { leagueBadgeSpec } from "../services/leagueIcons";
 
 defineEmits(["back", "create", "join", "open"]);
 
@@ -197,9 +202,14 @@ const visibleLeagues = computed(() => {
   return myLeagues.value || [];
 });
 
-function leagueBadge(league) {
+function leagueBadgeIcon(league) {
+  return leagueBadgeSpec({ name: league?.name, iconKey: league?.iconKey }).icon;
+}
+
+function leagueBadgeTextFallback(league) {
   return (
-    leagueBadgeText({ name: league?.name, iconKey: league?.iconKey }) || "·"
+    leagueBadgeSpec({ name: league?.name, iconKey: league?.iconKey }).text ||
+    "·"
   );
 }
 </script>

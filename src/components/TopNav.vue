@@ -78,17 +78,7 @@
           title="Perfil"
           @click="$emit('go-profile')"
         >
-          <!-- user icon -->
-          <svg
-            viewBox="0 0 24 24"
-            class="w-5 h-5"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <path d="M20 21a8 8 0 0 0-16 0" />
-            <circle cx="12" cy="7" r="4" />
-          </svg>
+          <UserIcon class="w-5 h-5" />
         </button>
 
         <button
@@ -117,6 +107,7 @@
 <script setup>
 import { ref } from "vue";
 import ConfirmModal from "./ConfirmModal.vue";
+import { UserIcon } from "@heroicons/vue/24/outline";
 
 defineProps({
   active: {

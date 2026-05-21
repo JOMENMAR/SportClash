@@ -11,6 +11,7 @@
     "reset:leagues": "node scripts/resetLeagues.mjs"
   },
   "dependencies": {
+    "@heroicons/vue": "^2.2.0",
     "firebase": "^12.12.1",
     "firebase-admin": "^13.5.0",
     "vue": "^3.5.32"
