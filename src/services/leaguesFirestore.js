@@ -15,6 +15,7 @@ import {
 } from "firebase/firestore";
 import { auth, db } from "../firebase";
 import { log, warn, error as logError, group, groupEnd } from "./logger";
+import { isLeagueIconKey } from "./leagueIcons";
 
 function requireUser() {
   const user = auth.currentUser;
@@ -42,6 +43,7 @@ export async function createLeagueFirestore({
   name,
   visibility,
   dailyPointsLimit,
+  iconKey,
 }) {
   const user = requireUser();
 
@@ -68,6 +70,8 @@ export async function createLeagueFirestore({
   const vis = visibility === "private" ? "private" : "public";
   const publicNameKey = cleanName.toLowerCase();
 
+  const cleanIconKey = isLeagueIconKey(iconKey) ? String(iconKey).trim() : "";
+
   const result = await runTransaction(db, async (tx) => {
     // IMPORTANTE: no usamos addDoc dentro de transaction.
     const leagueDocRef = doc(leaguesCol);
@@ -86,14 +90,20 @@ export async function createLeagueFirestore({
       });
     }
 
-    tx.set(leagueDocRef, {
+    const leagueDoc = {
       name: cleanName,
       visibility: vis,
       dailyPointsLimit: limitNum,
       createdAt: serverTimestamp(),
       createdBy: user.uid,
       membersCount: 1,
-    });
+    };
+
+    if (cleanIconKey) {
+      leagueDoc.iconKey = cleanIconKey;
+    }
+
+    tx.set(leagueDocRef, leagueDoc);
 
     // membership (admin)
     const memberId = `${leagueDocRef.id}_${user.uid}`;
@@ -470,6 +480,23 @@ export async function fetchApprovedPointRequestsFirestore({
     where("leagueId", "==", String(leagueId)),
     where("status", "==", "approved"),
     orderBy("createdAt", "desc"),
+    limit(max),
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
+export async function fetchUserApprovedPointRequestsFirestore({
+  uid,
+  max = 500,
+} = {}) {
+  const userId = String(uid || "");
+  if (!userId) throw new Error("uid requerido");
+
+  const q = query(
+    collection(db, "pointRequests"),
+    where("uid", "==", userId),
+    where("status", "==", "approved"),
     limit(max),
   );
   const snap = await getDocs(q);

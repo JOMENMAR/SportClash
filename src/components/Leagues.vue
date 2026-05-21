@@ -61,7 +61,11 @@
             <div class="flex items-end justify-between gap-4">
               <div>
                 <h2 class="text-lg font-bold tracking-tight text-white">
-                  {{ props.initialTab === "public" ? "Ligas públicas" : "Mis ligas" }}
+                  {{
+                    props.initialTab === "public"
+                      ? "Ligas públicas"
+                      : "Mis ligas"
+                  }}
                 </h2>
                 <p class="mt-0.5 text-sm text-white/60">
                   {{
@@ -109,15 +113,26 @@
                 class="p-4 border rounded-2xl border-white/10 bg-black/20"
               >
                 <div class="flex items-start justify-between gap-3">
-                  <div>
-                    <div class="text-xs text-white/60">
-                      {{
-                        league.visibility === "public" ? "Pública" : "Privada"
-                      }}
-                      · {{ league.role === "admin" ? "Admin" : "Miembro" }}
+                  <div class="flex items-start gap-3 min-w-0">
+                    <div
+                      class="mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-300/15 ring-1 ring-emerald-200/20 shrink-0"
+                      aria-hidden
+                    >
+                      <span class="text-lg text-emerald-100">{{
+                        leagueBadge(league)
+                      }}</span>
                     </div>
-                    <div class="mt-1 text-base font-semibold text-white">
-                      {{ league.name }}
+
+                    <div class="min-w-0">
+                      <div class="text-xs text-white/60">
+                        {{
+                          league.visibility === "public" ? "Pública" : "Privada"
+                        }}
+                        · {{ league.role === "admin" ? "Admin" : "Miembro" }}
+                      </div>
+                      <div class="mt-1 text-base font-semibold text-white">
+                        {{ league.name }}
+                      </div>
                     </div>
                   </div>
 
@@ -153,6 +168,7 @@
 import { computed, onMounted } from "vue";
 import { useLeaguesStore } from "../services/leaguesStore";
 import BasePage from "./BasePage.vue";
+import { leagueBadgeText } from "../services/leagueIcons";
 
 defineEmits(["back", "create", "join", "open"]);
 
@@ -180,4 +196,10 @@ const visibleLeagues = computed(() => {
   }
   return myLeagues.value || [];
 });
+
+function leagueBadge(league) {
+  return (
+    leagueBadgeText({ name: league?.name, iconKey: league?.iconKey }) || "·"
+  );
+}
 </script>

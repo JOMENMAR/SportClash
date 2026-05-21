@@ -26,6 +26,37 @@
           </div>
 
           <div>
+            <label class="text-sm text-white/70">Icono (opcional)</label>
+            <div class="flex items-start gap-3 mt-2">
+              <div
+                class="mt-0.5 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-300/15 ring-1 ring-emerald-200/20"
+                aria-hidden
+              >
+                <span class="text-lg text-emerald-100">{{ previewBadge }}</span>
+              </div>
+
+              <div class="flex-1">
+                <select
+                  v-model="iconKey"
+                  class="sc-dark-select w-full px-4 py-3 text-sm text-white rounded-xl bg-white/10 ring-1 ring-white/10 focus:outline-none focus:ring-2 focus:ring-emerald-300/60"
+                >
+                  <option value="">Sin icono (usar letra)</option>
+                  <option
+                    v-for="opt in iconOptions"
+                    :key="opt.key"
+                    :value="opt.key"
+                  >
+                    {{ opt.emoji }} {{ opt.label }}
+                  </option>
+                </select>
+                <p class="mt-1 text-xs text-white/50">
+                  Si no eliges nada, se usará la primera letra del nombre.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div>
             <label class="text-sm text-white/70">Visibilidad</label>
             <div class="grid grid-cols-1 gap-2 mt-2 sm:grid-cols-2">
               <button
@@ -110,10 +141,11 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import { useLeaguesStore } from "../services/leaguesStore";
 import BasePage from "./BasePage.vue";
 import { toast } from "../services/toasts";
+import { LEAGUE_ICON_OPTIONS, leagueBadgeText } from "../services/leagueIcons";
 
 const emit = defineEmits(["back", "created"]);
 const store = useLeaguesStore();
@@ -121,6 +153,13 @@ const store = useLeaguesStore();
 const name = ref("");
 const visibility = ref("public");
 const dailyPointsLimit = ref(2);
+const iconKey = ref("");
+
+const iconOptions = LEAGUE_ICON_OPTIONS;
+
+const previewBadge = computed(() => {
+  return leagueBadgeText({ name: name.value, iconKey: iconKey.value }) || "·";
+});
 
 const busy = ref(false);
 const error = ref("");
@@ -141,6 +180,7 @@ async function onSubmit() {
       name: name.value,
       visibility: visibility.value,
       dailyPointsLimit: limit,
+      iconKey: iconKey.value,
     });
     toast.success("Liga creada");
     emit("created", league);

@@ -34,6 +34,8 @@ const previousStep = ref("home");
 const activeLeagueId = ref("");
 const activeLeagueInitialTab = ref("");
 const activeLeagueName = ref("");
+const activeProfileUid = ref("");
+const activeProfileLeagueId = ref("");
 
 const leaguesStore = useLeaguesStore();
 
@@ -401,8 +403,10 @@ function goBack() {
   step.value = previousStep.value || "home";
 }
 
-function goProfile() {
+function goProfile(uid, leagueId) {
   previousStep.value = step.value;
+  activeProfileUid.value = uid ? String(uid) : "";
+  activeProfileLeagueId.value = leagueId ? String(leagueId) : "";
   step.value = "profile";
 }
 
@@ -485,6 +489,7 @@ function navActive() {
         @open-global="goGlobal"
         @open-league="goLeagueDetail"
         @open-history="() => {}"
+        @open-profile="goProfile"
       />
       <Leagues
         v-else-if="step === 'myLeagues'"
@@ -519,8 +524,15 @@ function navActive() {
         @back="goBack"
         @league-loaded="onLeagueLoaded"
         @league-deleted="onLeagueDeleted"
+        @open-profile="goProfile"
       />
-      <Profile v-else-if="step === 'profile'" @back="goBack" @logout="logout" />
+      <Profile
+        v-else-if="step === 'profile'"
+        :uid="activeProfileUid"
+        :leagueId="activeProfileLeagueId"
+        @back="goBack"
+        @logout="logout"
+      />
       <Home
         v-else
         @create-league="goCreateLeague"
@@ -529,6 +541,7 @@ function navActive() {
         @open-global="goGlobal"
         @open-league="goLeagueDetail"
         @open-history="() => {}"
+        @open-profile="goProfile"
       />
     </main>
 

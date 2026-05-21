@@ -95,6 +95,7 @@ Este esquema está implementado en `src/services/leaguesFirestore.js`.
 
 - `leagues/{leagueId}`
   - `name: string`
+  - `iconKey?: string` (opcional; icono de deporte en UI)
   - `visibility: 'public' | 'private'`
   - `dailyPointsLimit: number`
   - `createdAt: serverTimestamp()`

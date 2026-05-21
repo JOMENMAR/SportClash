@@ -46,16 +46,18 @@ async function refresh() {
   }
 }
 
-async function createLeague({ name, visibility, dailyPointsLimit }) {
+async function createLeague({ name, visibility, dailyPointsLimit, iconKey }) {
   group("LeaguesStore", "createLeague()", {
     name,
     visibility,
     dailyPointsLimit,
+    iconKey,
   });
   const league = await createLeagueFirestore({
     name,
     visibility,
     dailyPointsLimit,
+    iconKey,
   });
   log("LeaguesStore", "createLeague: created", {
     id: league?.id,

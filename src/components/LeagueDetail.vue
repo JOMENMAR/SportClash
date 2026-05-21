@@ -14,11 +14,22 @@
               }}
               <template v-if="roleLabel"> · {{ roleLabel }}</template>
             </div>
-            <h1
-              class="mt-1 text-2xl font-extrabold leading-none tracking-tight truncate text-emerald-300"
-            >
-              {{ league?.name || "Liga" }}
-            </h1>
+            <div class="flex items-center gap-3 mt-1 min-w-0">
+              <div
+                class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-300/15 ring-1 ring-emerald-200/20 shrink-0"
+                aria-hidden
+              >
+                <span class="text-lg text-emerald-100">{{
+                  leagueBadge(league)
+                }}</span>
+              </div>
+
+              <h1
+                class="text-2xl font-extrabold leading-none tracking-tight truncate text-emerald-300 min-w-0"
+              >
+                {{ league?.name || "Liga" }}
+              </h1>
+            </div>
             <div class="mt-1 text-sm text-white/60">
               Límite diario:
               <span class="font-semibold text-white">{{
@@ -205,30 +216,33 @@
                     class="p-3 border rounded-xl border-white/10 bg-white/5"
                   >
                     <div class="flex items-start justify-between gap-3">
-                      <div class="min-w-0">
+                      <div class="flex-1 min-w-0">
                         <div class="text-sm font-semibold text-white">
-                          <span class="text-white/80">{{
-                            userLabel(m.uid)
-                          }}</span>
+                          <button
+                            type="button"
+                            class="block truncate text-left text-white/80 hover:underline"
+                            :title="userLabel(m.uid)"
+                            @click="emit('open-profile', m.uid, leagueId)"
+                          >
+                            {{ userLabel(m.uid) }}
+                          </button>
                         </div>
                         <div class="mt-1 text-xs text-white/60">
                           rol: <span class="font-semibold">{{ m.role }}</span>
                         </div>
                       </div>
-                    </div>
 
-                    <div
-                      v-if="canManageMembers && m.uid !== myUid"
-                      class="mt-3"
-                    >
                       <div
-                        class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+                        v-if="canManageMembers && m.uid !== myUid"
+                        class="shrink-0 flex flex-nowrap items-center gap-2"
                       >
-                        <div class="flex items-center gap-2">
-                          <label class="text-xs text-white/60">Rol:</label>
+                        <div class="flex flex-nowrap items-center gap-2">
+                          <label class="text-xs text-white/60 hidden sm:block"
+                            >Rol:</label
+                          >
                           <select
                             v-model="memberRoleDraft[m.id]"
-                            class="sc-dark-select px-3 py-2 text-xs text-white rounded-xl bg-white/10 ring-1 ring-white/10 focus:outline-none"
+                            class="sc-dark-select px-2 py-2 text-xs text-white rounded-xl bg-white/10 ring-1 ring-white/10 focus:outline-none sm:px-3"
                             :disabled="
                               memberBusyId === m.id || m.role === 'owner'
                             "
@@ -239,7 +253,7 @@
 
                           <button
                             type="button"
-                            class="px-3 py-2 text-xs font-semibold transition rounded-xl bg-emerald-300 text-gray-950 ring-1 ring-emerald-200/30 hover:opacity-95 disabled:opacity-60"
+                            class="px-2 py-2 text-xs font-semibold transition rounded-xl bg-emerald-300 text-gray-950 ring-1 ring-emerald-200/30 hover:opacity-95 disabled:opacity-60 sm:px-3"
                             :disabled="
                               memberBusyId === m.id ||
                               m.role === 'owner' ||
@@ -253,7 +267,7 @@
 
                         <button
                           type="button"
-                          class="px-3 py-2 text-xs font-semibold text-white transition rounded-xl bg-rose-500/80 ring-1 ring-rose-400/30 hover:bg-rose-500 disabled:opacity-60"
+                          class="px-2 py-2 text-xs font-semibold text-white transition rounded-xl bg-rose-500/80 ring-1 ring-rose-400/30 hover:bg-rose-500 disabled:opacity-60 sm:px-3"
                           :disabled="
                             memberBusyId === m.id || m.role === 'owner'
                           "
@@ -262,13 +276,15 @@
                           {{ memberBusyId === m.id ? "..." : "Expulsar" }}
                         </button>
                       </div>
+                    </div>
 
-                      <div
-                        v-if="membersActionMsg"
-                        class="mt-2 text-xs text-white/70"
-                      >
-                        {{ membersActionMsg }}
-                      </div>
+                    <div
+                      v-if="
+                        canManageMembers && m.uid !== myUid && membersActionMsg
+                      "
+                      class="mt-2 text-xs text-white/70"
+                    >
+                      {{ membersActionMsg }}
                     </div>
                   </li>
                 </ul>
@@ -613,7 +629,15 @@
                           <div class="text-sm font-semibold text-white">
                             +{{ r.points }}
                             <span class="text-xs font-normal text-white/60">
-                              · {{ userLabel(r.uid) }}
+                              ·
+                              <button
+                                type="button"
+                                class="hover:underline"
+                                :title="userLabel(r.uid)"
+                                @click="emit('open-profile', r.uid, leagueId)"
+                              >
+                                {{ userLabel(r.uid) }}
+                              </button>
                             </span>
                           </div>
                           <div v-if="r.note" class="mt-1 text-xs text-white/70">
@@ -712,7 +736,15 @@
                     <div class="flex items-center justify-between gap-3">
                       <div class="min-w-0">
                         <div class="text-sm font-semibold text-white truncate">
-                          #{{ row.rank }} · {{ userLabel(row.uid) }}
+                          #{{ row.rank }} ·
+                          <button
+                            type="button"
+                            class="hover:underline"
+                            :title="userLabel(row.uid)"
+                            @click="emit('open-profile', row.uid, leagueId)"
+                          >
+                            {{ userLabel(row.uid) }}
+                          </button>
                         </div>
                         <div class="mt-1 text-xs text-white/60">
                           Puntos aprobados:
@@ -983,8 +1015,14 @@ import {
 import BasePage from "./BasePage.vue";
 import { auth } from "../firebase";
 import { fetchUserProfileLabels } from "../services/userProfiles";
+import { leagueBadgeText } from "../services/leagueIcons";
 
-const emit = defineEmits(["back", "league-loaded", "league-deleted"]);
+const emit = defineEmits([
+  "back",
+  "league-loaded",
+  "league-deleted",
+  "open-profile",
+]);
 
 const props = defineProps({
   leagueId: {
@@ -1263,6 +1301,12 @@ function userLabel(uid) {
   const u = String(uid || "");
   const name = userNames.value?.[u];
   return name ? name : "Atleta";
+}
+
+function leagueBadge(league) {
+  return (
+    leagueBadgeText({ name: league?.name, iconKey: league?.iconKey }) || "·"
+  );
 }
 
 async function preloadUserNames(uids) {

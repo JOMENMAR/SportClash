@@ -95,10 +95,9 @@
                     class="mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-300/15 ring-1 ring-emerald-200/20"
                     aria-hidden
                   >
-                    <span
-                      class="text-emerald-200"
-                      v-html="iconSvg('leagues')"
-                    />
+                    <span class="text-lg text-emerald-100">{{
+                      leagueBadge(recentLeague)
+                    }}</span>
                   </div>
 
                   <div class="min-w-0">
@@ -351,6 +350,7 @@
 
         <!-- Logros de atletas -->
         <section
+          v-if="showAchievements"
           class="p-5 border lg:col-span-3 rounded-2xl border-white/10 bg-gray-950/40 ring-1 ring-white/5 backdrop-blur-xl sm:p-6"
         >
           <div class="flex items-start justify-between gap-4">
@@ -399,25 +399,18 @@
             </div>
           </div>
 
-          <div
-            v-else-if="!activeLeagueId"
-            class="p-4 mt-4 text-sm border rounded-2xl border-white/10 bg-black/20 text-white/70"
-          >
-            Únete a una liga para ver logros.
-          </div>
-
-          <div
-            v-else-if="!achTop"
-            class="p-4 mt-4 text-sm border rounded-2xl border-white/10 bg-black/20 text-white/70"
-          >
-            Aún no hay puntos aprobados en esta liga.
-          </div>
-
           <div v-else class="grid grid-cols-1 gap-3 mt-4 sm:grid-cols-3">
             <div class="p-4 border rounded-2xl border-white/10 bg-black/20">
               <div class="text-xs text-white/60">Atleta top</div>
               <div class="mt-1 text-sm font-semibold break-words">
-                {{ userLabel(achTop.uid) }}
+                <button
+                  type="button"
+                  class="text-left hover:underline"
+                  :title="userLabel(achTop.uid)"
+                  @click="$emit('open-profile', achTop.uid, activeLeagueId)"
+                >
+                  {{ userLabel(achTop.uid) }}
+                </button>
               </div>
             </div>
             <div class="p-4 border rounded-2xl border-white/10 bg-black/20">
@@ -441,6 +434,7 @@ import { computed, onMounted, ref, watch } from "vue";
 import { useLeaguesStore } from "../services/leaguesStore";
 import { fetchLeagueAthleteAchievementsFirestore } from "../services/leaguesFirestore";
 import { fetchUserProfileLabel } from "../services/userProfiles";
+import { leagueBadgeText } from "../services/leagueIcons";
 
 defineEmits([
   "create-league",
@@ -449,6 +443,7 @@ defineEmits([
   "open-global",
   "open-league",
   "open-history",
+  "open-profile",
 ]);
 
 const store = useLeaguesStore();
@@ -475,6 +470,14 @@ const recentLeague = computed(() => {
 const leaguesLoading = computed(
   () => store.state?.loading === true && store.state?.loaded !== true,
 );
+
+const showAchievements = computed(() => {
+  if (!activeLeagueId.value) return false;
+  if (achLoading.value) return true;
+  if (leaguesLoading.value) return true;
+  if (achError.value) return true;
+  return !!achTop.value;
+});
 
 async function loadAchievements() {
   achError.value = "";
@@ -510,6 +513,12 @@ function userLabel(uid) {
   const u = String(uid || "");
   const n = nameCache.value?.[u] || "";
   return n || "Atleta";
+}
+
+function leagueBadge(league) {
+  return (
+    leagueBadgeText({ name: league?.name, iconKey: league?.iconKey }) || "·"
+  );
 }
 
 function iconSvg(name) {
