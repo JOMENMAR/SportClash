@@ -8,6 +8,11 @@
       class="fixed inset-0 pointer-events-none animated-gradient-bg"
     />
 
+    <!-- Fondo opcional específico de la página (fixed). -->
+    <div aria-hidden class="fixed inset-0 pointer-events-none">
+      <slot name="bg" />
+    </div>
+
     <!-- Contenido real de la pantalla -->
     <div class="relative z-10">
       <slot />

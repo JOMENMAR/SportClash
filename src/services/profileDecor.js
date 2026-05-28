@@ -37,6 +37,14 @@ export const PROFILE_BANNER_OPTIONS = [
   { key: "rose", label: "Rojo" },
 ];
 
+export const PROFILE_PAGE_BG_OPTIONS = [
+  { key: "none", label: "Sin fondo" },
+  { key: "classic", label: "Clásico" },
+  { key: "emerald", label: "Verde" },
+  { key: "sky", label: "Azul" },
+  { key: "rose", label: "Rojo" },
+];
+
 export function isProfileAccentKey(key) {
   const k = String(key || "");
   return PROFILE_ACCENT_OPTIONS.some((o) => o.key === k);
@@ -47,11 +55,76 @@ export function isProfileBannerKey(key) {
   return PROFILE_BANNER_OPTIONS.some((o) => o.key === k);
 }
 
+export function isProfilePageBgKey(key) {
+  const k = String(key || "");
+  return PROFILE_PAGE_BG_OPTIONS.some((o) => o.key === k);
+}
+
 export function getProfileAccent(key) {
   const k = String(key || "");
   return (
     PROFILE_ACCENT_OPTIONS.find((o) => o.key === k) || PROFILE_ACCENT_OPTIONS[0]
   );
+}
+
+/**
+ * Devuelve capas (blobs) para el fondo de página del perfil.
+ * Importante: clases explícitas para que Tailwind las incluya.
+ */
+export function getProfilePageBgLayers(key) {
+  const k = String(key || "none");
+  if (k === "none") return [];
+
+  if (k === "emerald") {
+    return [
+      {
+        class:
+          "absolute w-[38rem] h-[38rem] rounded-full -top-56 -left-56 bg-emerald-400/10 blur-3xl",
+      },
+      {
+        class:
+          "absolute w-[34rem] h-[34rem] rounded-full -bottom-64 -right-56 bg-emerald-400/10 blur-3xl",
+      },
+    ];
+  }
+
+  if (k === "sky") {
+    return [
+      {
+        class:
+          "absolute w-[38rem] h-[38rem] rounded-full -top-56 -left-56 bg-sky-400/10 blur-3xl",
+      },
+      {
+        class:
+          "absolute w-[34rem] h-[34rem] rounded-full -bottom-64 -right-56 bg-sky-400/10 blur-3xl",
+      },
+    ];
+  }
+
+  if (k === "rose") {
+    return [
+      {
+        class:
+          "absolute w-[38rem] h-[38rem] rounded-full -top-56 -left-56 bg-rose-500/10 blur-3xl",
+      },
+      {
+        class:
+          "absolute w-[34rem] h-[34rem] rounded-full -bottom-64 -right-56 bg-rose-500/10 blur-3xl",
+      },
+    ];
+  }
+
+  // classic (default)
+  return [
+    {
+      class:
+        "absolute w-[40rem] h-[40rem] rounded-full -top-60 -left-60 bg-emerald-400/10 blur-3xl",
+    },
+    {
+      class:
+        "absolute w-[42rem] h-[42rem] rounded-full -bottom-72 -right-64 bg-sky-400/10 blur-3xl",
+    },
+  ];
 }
 
 /**

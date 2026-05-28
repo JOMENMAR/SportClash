@@ -1,5 +1,11 @@
 <template>
   <BasePage>
+    <template #bg>
+      <div v-if="pageBgLayers.length" aria-hidden class="absolute inset-0">
+        <div v-for="(l, i) in pageBgLayers" :key="i" :class="l.class" />
+      </div>
+    </template>
+
     <div class="mx-auto w-full max-w-5xl">
       <header
         class="relative overflow-hidden flex flex-col gap-2 rounded-2xl border border-white/10 bg-gray-950/50 p-5 shadow-2xl ring-1 ring-white/5 backdrop-blur-xl sm:p-6"
@@ -453,7 +459,7 @@
               <div class="p-4 border-b border-white/10 bg-white/5">
                 <div class="text-sm font-extrabold text-white">Decoración</div>
                 <div class="mt-1 text-xs text-white/60">
-                  Icono y color del perfil.
+                  Icono, color y fondo de la página.
                 </div>
               </div>
 
@@ -551,6 +557,27 @@
                   </div>
                 </div>
 
+                <div>
+                  <div class="text-xs text-white/60">Fondo de la página</div>
+                  <div class="mt-2">
+                    <select
+                      v-model="profilePageBg"
+                      class="sc-dark-select w-full rounded-xl bg-white/10 px-4 py-3 text-sm text-white ring-1 ring-white/10 focus:outline-none"
+                    >
+                      <option
+                        v-for="o in PROFILE_PAGE_BG_OPTIONS"
+                        :key="o.key"
+                        :value="o.key"
+                      >
+                        {{ o.label }}
+                      </option>
+                    </select>
+                  </div>
+                  <div class="mt-1 text-xs text-white/60">
+                    Este fondo se ve detrás de toda la página del perfil.
+                  </div>
+                </div>
+
                 <div class="flex items-center justify-end gap-2">
                   <button
                     type="button"
@@ -579,10 +606,13 @@ import ConfirmModal from "./ConfirmModal.vue";
 import {
   PROFILE_ACCENT_OPTIONS,
   PROFILE_BANNER_OPTIONS,
+  PROFILE_PAGE_BG_OPTIONS,
   getProfileAccent,
   getProfileBannerLayers,
+  getProfilePageBgLayers,
   isProfileAccentKey,
   isProfileBannerKey,
+  isProfilePageBgKey,
 } from "../services/profileDecor";
 import {
   LEAGUE_ICON_OPTIONS,
@@ -615,6 +645,7 @@ const profileIconKey = ref("");
 const profileBanner = ref("classic");
 const profileAccent = ref("emerald");
 const profileAccentHex = ref("");
+const profilePageBg = ref("none");
 const status = ref("");
 const bio = ref("");
 
@@ -719,6 +750,12 @@ const bannerLayers = computed(() =>
   })),
 );
 
+const pageBgLayers = computed(() =>
+  getProfilePageBgLayers(profilePageBg.value).map((x) => ({
+    class: String(x?.class || ""),
+  })),
+);
+
 function openDecor() {
   if (!isSelf.value) return;
   decorOpen.value = true;
@@ -804,6 +841,9 @@ async function load() {
         /^#[0-9a-fA-F]{6}$/.test(data.profileAccentHex)
           ? data.profileAccentHex
           : "";
+      profilePageBg.value = isProfilePageBgKey(data?.profilePageBg)
+        ? data.profilePageBg
+        : "none";
       status.value = String(data?.status ?? "").slice(0, 40);
       bio.value = String(data?.bio ?? "").slice(0, 200);
       toast.info("Perfil cargado", { timeoutMs: 1400 });
@@ -1120,6 +1160,7 @@ async function onSave() {
         profileBanner: String(profileBanner.value || "classic"),
         profileAccent: String(profileAccent.value || "emerald"),
         profileAccentHex: String(profileAccentHex.value || "").trim(),
+        profilePageBg: String(profilePageBg.value || "none"),
         status: String(status.value || "")
           .trim()
           .slice(0, 40),
