@@ -16,11 +16,16 @@ import {
 import { auth, db } from "../firebase";
 import { log, warn, error as logError, group, groupEnd } from "./logger";
 import { isLeagueIconKey } from "./leagueIcons";
+import { awsFetchJson, isAwsEnabled } from "./awsHttp";
 
 function requireUser() {
   const user = auth.currentUser;
   if (!user?.uid) throw new Error("Debes iniciar sesión");
   return user;
+}
+
+function awsOn() {
+  return isAwsEnabled();
 }
 
 function localIsoDateToday() {
@@ -45,6 +50,38 @@ export async function createLeagueFirestore({
   dailyPointsLimit,
   iconKey,
 }) {
+  if (awsOn()) {
+    requireUser();
+
+    const cleanName = String(name || "").trim();
+    if (!cleanName) throw new Error("Nombre requerido");
+    if (cleanName.length < 4) {
+      throw new Error("El nombre debe tener mínimo 4 caracteres");
+    }
+
+    const limitNum = Number(dailyPointsLimit);
+    if (!Number.isFinite(limitNum) || limitNum < 1 || limitNum > 10) {
+      throw new Error("El límite diario debe ser 1 a 10");
+    }
+
+    const vis = visibility === "private" ? "private" : "public";
+    const cleanIconKey = isLeagueIconKey(iconKey) ? String(iconKey).trim() : "";
+
+    const created = await awsFetchJson("/leagues", {
+      method: "POST",
+      body: {
+        name: cleanName,
+        visibility: vis,
+        dailyPointsLimit: limitNum,
+        iconKey: cleanIconKey || "weights",
+      },
+    });
+
+    const leagueId = created?.league?.leagueId;
+    if (!leagueId) throw new Error("No se pudo crear la liga");
+    return await fetchLeagueByIdFirestore(leagueId);
+  }
+
   const user = requireUser();
 
   group("LeaguesFS", "createLeagueFirestore", {
@@ -142,6 +179,16 @@ export async function fetchPublicLeaguesFirestore({ max = 25 } = {}) {
 }
 
 export async function fetchMyLeaguesFirestore({ max = 50 } = {}) {
+  if (awsOn()) {
+    requireUser();
+    const res = await awsFetchJson("/me/leagues");
+    const leagues = Array.isArray(res?.leagues) ? res.leagues : [];
+    return leagues.slice(0, max).map((l) => ({
+      id: l.leagueId,
+      ...l,
+    }));
+  }
+
   const user = requireUser();
 
   log("LeaguesFS", "fetchMyLeaguesFirestore", { max, uid: user.uid });
@@ -193,6 +240,17 @@ export async function ensureSeedPublicLeaguesFirestore() {
 
 export async function fetchLeagueByIdFirestore(leagueId) {
   if (!leagueId) throw new Error("leagueId requerido");
+
+  if (awsOn()) {
+    requireUser();
+    const res = await awsFetchJson(
+      `/leagues/${encodeURIComponent(String(leagueId))}`,
+    );
+    const league = res?.league;
+    if (!league?.leagueId) throw new Error("Liga no encontrada");
+    return { id: league.leagueId, ...league };
+  }
+
   const snap = await getDoc(doc(db, "leagues", String(leagueId)));
   if (!snap.exists()) throw new Error("Liga no encontrada");
   return { id: snap.id, ...snap.data() };
@@ -200,6 +258,25 @@ export async function fetchLeagueByIdFirestore(leagueId) {
 
 export async function fetchMyMembershipInLeagueFirestore(leagueId) {
   const user = requireUser();
+
+  if (awsOn()) {
+    try {
+      const res = await awsFetchJson(
+        `/leagues/${encodeURIComponent(String(leagueId))}/members`,
+      );
+      const members = Array.isArray(res?.members) ? res.members : [];
+      const mine = members.find((m) => String(m?.uid || "") === user.uid);
+      if (!mine) return null;
+      return {
+        id: `${leagueId}_${user.uid}`,
+        ...mine,
+      };
+    } catch (e) {
+      if (String(e?.code || "") === "forbidden") return null;
+      throw e;
+    }
+  }
+
   const memberId = `${leagueId}_${user.uid}`;
   const snap = await getDoc(doc(db, "leagueMembers", memberId));
   if (!snap.exists()) return null;
@@ -209,6 +286,13 @@ export async function fetchMyMembershipInLeagueFirestore(leagueId) {
 export async function deleteLeagueFirestore(leagueId) {
   requireUser();
   if (!leagueId) throw new Error("leagueId requerido");
+
+  if (awsOn()) {
+    await awsFetchJson(`/leagues/${encodeURIComponent(String(leagueId))}`, {
+      method: "DELETE",
+    });
+    return;
+  }
 
   const id = String(leagueId);
   await runTransaction(db, async (tx) => {
@@ -235,6 +319,19 @@ export async function fetchLeagueMembersFirestore({
   // Nota: esto requiere rules que permitan leer docs de leagueMembers por leagueId.
   // Si no, se puede dejar para más adelante.
   if (!leagueId) throw new Error("leagueId requerido");
+
+  if (awsOn()) {
+    requireUser();
+    const res = await awsFetchJson(
+      `/leagues/${encodeURIComponent(String(leagueId))}/members`,
+    );
+    const members = Array.isArray(res?.members) ? res.members : [];
+    return members.slice(0, max).map((m) => ({
+      id: `${leagueId}_${m.uid}`,
+      ...m,
+    }));
+  }
+
   const q = query(
     collection(db, "leagueMembers"),
     where("leagueId", "==", String(leagueId)),
@@ -251,6 +348,17 @@ export async function updateMemberRoleFirestore({ leagueId, targetUid, role }) {
   const newRole = String(role || "");
   if (!["admin", "member"].includes(newRole)) {
     throw new Error("Rol inválido");
+  }
+
+  if (awsOn()) {
+    await awsFetchJson(
+      `/leagues/${encodeURIComponent(String(leagueId))}/members/${encodeURIComponent(String(targetUid))}`,
+      {
+        method: "PATCH",
+        body: { role: newRole },
+      },
+    );
+    return;
   }
 
   const memberId = `${leagueId}_${targetUid}`;
@@ -275,6 +383,14 @@ export async function removeMemberFromLeagueFirestore({ leagueId, targetUid }) {
   const user = requireUser();
   if (!leagueId) throw new Error("leagueId requerido");
   if (!targetUid) throw new Error("targetUid requerido");
+
+  if (awsOn()) {
+    await awsFetchJson(
+      `/leagues/${encodeURIComponent(String(leagueId))}/members/${encodeURIComponent(String(targetUid))}`,
+      { method: "DELETE" },
+    );
+    return;
+  }
 
   const memberId = `${leagueId}_${targetUid}`;
   const memberRef = doc(db, "leagueMembers", memberId);
@@ -303,6 +419,14 @@ export async function removeMemberFromLeagueFirestore({ leagueId, targetUid }) {
 export async function requestToJoinLeagueFirestore(leagueId) {
   const user = requireUser();
   if (!leagueId) throw new Error("leagueId requerido");
+
+  if (awsOn()) {
+    await awsFetchJson(
+      `/leagues/${encodeURIComponent(String(leagueId))}/join-requests`,
+      { method: "POST", body: {} },
+    );
+    return;
+  }
 
   const reqId = `${leagueId}_${user.uid}`;
   const ref = doc(db, "leagueJoinRequests", reqId);
@@ -339,6 +463,16 @@ export async function requestToJoinLeagueFirestore(leagueId) {
 export async function fetchMyJoinRequestInLeagueFirestore(leagueId) {
   const user = requireUser();
   if (!leagueId) throw new Error("leagueId requerido");
+
+  if (awsOn()) {
+    const res = await awsFetchJson(
+      `/leagues/${encodeURIComponent(String(leagueId))}/join-requests/me`,
+    );
+    const jr = res?.joinRequest;
+    if (!jr) return null;
+    return { id: jr.requestId, ...jr };
+  }
+
   const reqId = `${leagueId}_${user.uid}`;
   const snap = await getDoc(doc(db, "leagueJoinRequests", reqId));
   if (!snap.exists()) return null;
@@ -350,6 +484,17 @@ export async function fetchPendingJoinRequestsFirestore({
   max = 100,
 } = {}) {
   if (!leagueId) throw new Error("leagueId requerido");
+
+  if (awsOn()) {
+    requireUser();
+    const res = await awsFetchJson(
+      `/leagues/${encodeURIComponent(String(leagueId))}/join-requests`,
+      { query: { status: "pending" } },
+    );
+    const items = Array.isArray(res?.joinRequests) ? res.joinRequests : [];
+    return items.slice(0, max).map((r) => ({ id: r.requestId, ...r }));
+  }
+
   const q = query(
     collection(db, "leagueJoinRequests"),
     where("leagueId", "==", String(leagueId)),
@@ -370,6 +515,7 @@ export async function cancelMyJoinRequestFirestore(leagueId) {
 export async function decideJoinRequestFirestore({
   leagueId,
   requestUid,
+  requestId,
   status,
 } = {}) {
   const user = requireUser();
@@ -377,6 +523,28 @@ export async function decideJoinRequestFirestore({
   if (!requestUid) throw new Error("requestUid requerido");
   if (!["approved", "rejected"].includes(status)) {
     throw new Error("Estado inválido");
+  }
+
+  if (awsOn()) {
+    const id = requestId || null;
+    let resolvedRequestId = id;
+    if (!resolvedRequestId) {
+      const pending = await fetchPendingJoinRequestsFirestore({ leagueId });
+      const match = (pending || []).find(
+        (r) => String(r?.uid || "") === String(requestUid),
+      );
+      resolvedRequestId = match?.id || match?.requestId || null;
+    }
+    if (!resolvedRequestId) throw new Error("Solicitud no encontrada");
+
+    await awsFetchJson(
+      `/leagues/${encodeURIComponent(String(leagueId))}/join-requests/${encodeURIComponent(String(resolvedRequestId))}/decide`,
+      {
+        method: "POST",
+        body: { decision: status === "approved" ? "approve" : "reject" },
+      },
+    );
+    return;
   }
 
   // Pre-check fuera de la transacción:
@@ -448,6 +616,23 @@ export async function createPointRequestFirestore({
   if (dateStr > localIsoDateToday()) {
     throw new Error("La fecha no puede ser futura");
   }
+
+  if (awsOn()) {
+    const cleanNote = String(note || "")
+      .trim()
+      .slice(0, 500);
+    await awsFetchJson(
+      `/leagues/${encodeURIComponent(String(leagueId))}/point-requests`,
+      {
+        method: "POST",
+        body: {
+          performedOn: dateStr,
+          ...(cleanNote ? { note: cleanNote } : null),
+        },
+      },
+    );
+    return;
+  }
   // v2: cada solicitud vale 1 punto (no se envía cantidad)
   const pts = 1;
 
@@ -474,6 +659,16 @@ export async function fetchApprovedPointRequestsFirestore({
   max = 500,
 } = {}) {
   if (!leagueId) throw new Error("leagueId requerido");
+
+  if (awsOn()) {
+    requireUser();
+    const res = await awsFetchJson(
+      `/leagues/${encodeURIComponent(String(leagueId))}/point-requests`,
+      { query: { status: "approved" } },
+    );
+    const items = Array.isArray(res?.pointRequests) ? res.pointRequests : [];
+    return items.slice(0, max).map((r) => ({ id: r.requestId, ...r }));
+  }
 
   const q = query(
     collection(db, "pointRequests"),
@@ -509,6 +704,16 @@ export async function fetchMyPointRequestsFirestore({
 } = {}) {
   const user = requireUser();
   if (!leagueId) throw new Error("leagueId requerido");
+
+  if (awsOn()) {
+    const res = await awsFetchJson(
+      `/leagues/${encodeURIComponent(String(leagueId))}/point-requests/me`,
+    );
+    const items = Array.isArray(res?.pointRequests) ? res.pointRequests : [];
+    const mapped = items.map((r) => ({ id: r.requestId, ...r }));
+    mapped.sort((a, b) => String(b.id).localeCompare(String(a.id)));
+    return mapped.slice(0, max);
+  }
   const q = query(
     collection(db, "pointRequests"),
     where("leagueId", "==", String(leagueId)),
@@ -522,9 +727,25 @@ export async function fetchMyPointRequestsFirestore({
   return items;
 }
 
-export async function updateMyPointRequestFirestore({ requestId, note = "" }) {
+export async function updateMyPointRequestFirestore({
+  leagueId,
+  requestId,
+  note = "",
+}) {
   const user = requireUser();
   if (!requestId) throw new Error("requestId requerido");
+
+  if (awsOn()) {
+    if (!leagueId) throw new Error("leagueId requerido");
+    await awsFetchJson(
+      `/leagues/${encodeURIComponent(String(leagueId))}/point-requests/${encodeURIComponent(String(requestId))}`,
+      {
+        method: "PATCH",
+        body: { note: String(note || "").slice(0, 500) },
+      },
+    );
+    return;
+  }
 
   const ref = doc(db, "pointRequests", String(requestId));
   const snap = await getDoc(ref);
@@ -540,9 +761,18 @@ export async function updateMyPointRequestFirestore({ requestId, note = "" }) {
   });
 }
 
-export async function deleteMyPointRequestFirestore({ requestId }) {
+export async function deleteMyPointRequestFirestore({ leagueId, requestId }) {
   const user = requireUser();
   if (!requestId) throw new Error("requestId requerido");
+
+  if (awsOn()) {
+    if (!leagueId) throw new Error("leagueId requerido");
+    await awsFetchJson(
+      `/leagues/${encodeURIComponent(String(leagueId))}/point-requests/${encodeURIComponent(String(requestId))}`,
+      { method: "DELETE" },
+    );
+    return;
+  }
 
   const ref = doc(db, "pointRequests", String(requestId));
   const snap = await getDoc(ref);
@@ -561,6 +791,16 @@ export async function fetchPendingPointRequestsFirestore({
   max = 50,
 } = {}) {
   if (!leagueId) throw new Error("leagueId requerido");
+
+  if (awsOn()) {
+    requireUser();
+    const res = await awsFetchJson(
+      `/leagues/${encodeURIComponent(String(leagueId))}/point-requests`,
+      { query: { status: "pending" } },
+    );
+    const items = Array.isArray(res?.pointRequests) ? res.pointRequests : [];
+    return items.slice(0, max).map((r) => ({ id: r.requestId, ...r }));
+  }
   const q = query(
     collection(db, "pointRequests"),
     where("leagueId", "==", String(leagueId)),
@@ -578,6 +818,40 @@ export async function fetchLeagueAthleteAchievementsFirestore({
   // v1 simple: calcula agregados en cliente desde pointRequests aprobadas.
   // Nota: para escalar, lo ideal es una colección agregada (Cloud Function).
   if (!leagueId) throw new Error("leagueId requerido");
+
+  if (awsOn()) {
+    requireUser();
+    const rows = await fetchApprovedPointRequestsFirestore({
+      leagueId: String(leagueId),
+      max: maxRequests,
+    });
+
+    const totalsByUid = {};
+    for (const r of rows) {
+      const u = String(r.uid || "");
+      if (!u) continue;
+      const pts =
+        typeof r.points === "number" ? r.points : Number(r.points || 0);
+      totalsByUid[u] = (totalsByUid[u] || 0) + (Number.isFinite(pts) ? pts : 0);
+    }
+
+    let topUid = null;
+    let topPoints = 0;
+    for (const u of Object.keys(totalsByUid)) {
+      const v = totalsByUid[u] || 0;
+      if (v > topPoints) {
+        topPoints = v;
+        topUid = u;
+      }
+    }
+
+    return {
+      leagueId: String(leagueId),
+      totalsByUid,
+      top: topUid ? { uid: topUid, points: topPoints } : null,
+      approvalsCount: rows.length,
+    };
+  }
 
   const q = query(
     collection(db, "pointRequests"),
@@ -647,9 +921,19 @@ export async function fetchLeagueHistoryFirestore({
   const user = requireUser();
   if (!leagueId) throw new Error("leagueId requerido");
 
-  // v1: si existe backend que escribe leagueHistory, lo usamos.
-  // Si no hay eventos (muy común en despliegues sin backend), derivamos un historial
-  // desde colecciones existentes (pointRequests + leagueJoinRequests) sin escribir nada.
+  if (awsOn()) {
+    const res = await awsFetchJson(
+      `/leagues/${encodeURIComponent(String(leagueId))}/history`,
+      { query: { limit: max } },
+    );
+    const items = Array.isArray(res?.history) ? res.history : [];
+    // ya viene ordenado desc por eventId
+    return items;
+  }
+
+  // Query-safe: las rules exigen filtrar por visibleToUids.
+  // viewerRole se mantiene por compatibilidad con llamadas existentes.
+  void viewerRole;
 
   const q = query(
     collection(db, "leagueHistory"),
@@ -663,196 +947,7 @@ export async function fetchLeagueHistoryFirestore({
   // Con ids que empiezan con timestamp, podemos ordenar en cliente.
   const items = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
   items.sort((a, b) => String(b.id).localeCompare(String(a.id)));
-
-  if (items.length) return items;
-
-  const isAdminLike = viewerRole === "owner" || viewerRole === "admin";
-
-  function toMillis(ts) {
-    try {
-      if (ts?.toMillis) return ts.toMillis();
-      if (ts?.toDate) return ts.toDate().getTime();
-    } catch {
-      // ignore
-    }
-    return 0;
-  }
-
-  function mkId(prefix, ts, extra) {
-    const t = String(ts || 0).padStart(13, "0");
-    return `${String(leagueId)}_${prefix}_${t}_${extra || ""}`;
-  }
-
-  function pointToEvent(r) {
-    const decidedBy = String(r?.decidedBy || "");
-    const decidedAt = r?.decidedAt || null;
-    const status = String(r?.status || "");
-    const requestUid = String(r?.uid || "");
-    if (!decidedBy || !decidedAt) return null;
-    if (status !== "approved" && status !== "rejected") return null;
-    return {
-      id: mkId(
-        "pointRequest.decide",
-        toMillis(decidedAt),
-        `${decidedBy}_${requestUid}_${status}`,
-      ),
-      leagueId: String(leagueId),
-      type: "pointRequest.decide",
-      actorUid: decidedBy,
-      payload: {
-        status,
-        points: r?.points ?? 1,
-        requestUid,
-        rejectReason: r?.rejectReason ?? null,
-        rejectedOn: r?.rejectedOn ?? null,
-        note: r?.note ?? "",
-        performedOn: r?.performedOn ?? null,
-        requestId: r?.id || null,
-      },
-      createdAt: decidedAt,
-    };
-  }
-
-  function joinToEvent(r) {
-    const decidedBy = String(r?.decidedBy || "");
-    const decidedAt = r?.decidedAt || null;
-    const status = String(r?.status || "");
-    const requestUid = String(r?.uid || "");
-    if (!decidedBy || !decidedAt) return null;
-    if (status !== "approved" && status !== "rejected") return null;
-    return {
-      id: mkId(
-        "joinRequest.decide",
-        toMillis(decidedAt),
-        `${decidedBy}_${requestUid}_${status}`,
-      ),
-      leagueId: String(leagueId),
-      type: "joinRequest.decide",
-      actorUid: decidedBy,
-      payload: {
-        status,
-        requestUid,
-        requestId: r?.id || null,
-      },
-      createdAt: decidedAt,
-    };
-  }
-
-  // ---- PointRequests (decididas) ----
-  const pointEvents = [];
-  if (isAdminLike) {
-    const [approvedSnap, rejectedSnap] = await Promise.all([
-      getDocs(
-        query(
-          collection(db, "pointRequests"),
-          where("leagueId", "==", String(leagueId)),
-          where("status", "==", "approved"),
-          limit(max),
-        ),
-      ),
-      getDocs(
-        query(
-          collection(db, "pointRequests"),
-          where("leagueId", "==", String(leagueId)),
-          where("status", "==", "rejected"),
-          limit(max),
-        ),
-      ),
-    ]);
-    for (const d of approvedSnap.docs) {
-      const ev = pointToEvent({ id: d.id, ...d.data() });
-      if (ev) pointEvents.push(ev);
-    }
-    for (const d of rejectedSnap.docs) {
-      const ev = pointToEvent({ id: d.id, ...d.data() });
-      if (ev) pointEvents.push(ev);
-    }
-  } else {
-    // miembro: ve aprobadas de la liga + sus propias (incluye rechazadas propias)
-    const [approved, mine] = await Promise.all([
-      getDocs(
-        query(
-          collection(db, "pointRequests"),
-          where("leagueId", "==", String(leagueId)),
-          where("status", "==", "approved"),
-          limit(max),
-        ),
-      ),
-      getDocs(
-        query(
-          collection(db, "pointRequests"),
-          where("leagueId", "==", String(leagueId)),
-          where("uid", "==", user.uid),
-          limit(max),
-        ),
-      ),
-    ]);
-    for (const d of approved.docs) {
-      const ev = pointToEvent({ id: d.id, ...d.data() });
-      if (ev) pointEvents.push(ev);
-    }
-    for (const d of mine.docs) {
-      const ev = pointToEvent({ id: d.id, ...d.data() });
-      if (ev) pointEvents.push(ev);
-    }
-  }
-
-  // ---- JoinRequests (decididas) ----
-  const joinEvents = [];
-  if (isAdminLike) {
-    const [approvedSnap, rejectedSnap] = await Promise.all([
-      getDocs(
-        query(
-          collection(db, "leagueJoinRequests"),
-          where("leagueId", "==", String(leagueId)),
-          where("status", "==", "approved"),
-          limit(max),
-        ),
-      ),
-      getDocs(
-        query(
-          collection(db, "leagueJoinRequests"),
-          where("leagueId", "==", String(leagueId)),
-          where("status", "==", "rejected"),
-          limit(max),
-        ),
-      ),
-    ]);
-    for (const d of approvedSnap.docs) {
-      const ev = joinToEvent({ id: d.id, ...d.data() });
-      if (ev) joinEvents.push(ev);
-    }
-    for (const d of rejectedSnap.docs) {
-      const ev = joinToEvent({ id: d.id, ...d.data() });
-      if (ev) joinEvents.push(ev);
-    }
-  } else {
-    // miembro: sólo su propia solicitud de unión
-    const reqId = `${leagueId}_${user.uid}`;
-    const reqSnap = await getDoc(doc(db, "leagueJoinRequests", reqId));
-    if (reqSnap.exists()) {
-      const ev = joinToEvent({ id: reqSnap.id, ...reqSnap.data() });
-      if (ev) joinEvents.push(ev);
-    }
-  }
-
-  // Merge + sort
-  const all = [...pointEvents, ...joinEvents];
-  const seen = new Set();
-  const deduped = [];
-  for (const it of all) {
-    if (!it?.id || seen.has(it.id)) continue;
-    seen.add(it.id);
-    deduped.push(it);
-  }
-
-  deduped.sort((a, b) => {
-    const ta = toMillis(a?.createdAt);
-    const tb = toMillis(b?.createdAt);
-    return tb - ta || String(b?.id).localeCompare(String(a?.id));
-  });
-
-  return deduped.slice(0, max);
+  return items;
 }
 
 export async function decidePointRequestFirestore({
@@ -868,6 +963,29 @@ export async function decidePointRequestFirestore({
   if (!requestId) throw new Error("requestId requerido");
   if (!["approved", "rejected"].includes(status))
     throw new Error("Estado inválido");
+
+  if (awsOn()) {
+    if (!leagueId) throw new Error("leagueId requerido");
+    const decision = status === "approved" ? "approve" : "reject";
+    const reason = String(rejectReason || "")
+      .trim()
+      .slice(0, 300);
+    if (decision === "reject" && !reason) {
+      throw new Error("Debes indicar un motivo para rechazar");
+    }
+
+    await awsFetchJson(
+      `/leagues/${encodeURIComponent(String(leagueId))}/point-requests/${encodeURIComponent(String(requestId))}/decide`,
+      {
+        method: "POST",
+        body: {
+          decision,
+          ...(decision === "reject" ? { rejectReason: reason } : null),
+        },
+      },
+    );
+    return;
+  }
 
   const reason = String(rejectReason || "")
     .trim()

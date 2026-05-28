@@ -20,6 +20,10 @@ dist-ssr
 # Vite
 .vite
 
+# Serverless build artifacts
+.serverless/
+.esbuild/
+
 # Firebase / Emulators
 .firebase/
 firebase-debug.log

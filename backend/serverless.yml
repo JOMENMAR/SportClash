@@ -1,0 +1,348 @@
+service: sportclash-api
+
+frameworkVersion: "3"
+
+plugins:
+  - serverless-esbuild
+
+custom:
+  esbuild:
+    bundle: true
+    minify: false
+    sourcemap: true
+    platform: node
+    target: node20
+    format: cjs
+    keepOutputDirectory: true
+    exclude:
+      - aws-sdk
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  stage: ${opt:stage, 'dev'}
+  region: ${opt:region, 'eu-west-1'}
+  httpApi:
+    cors: true
+  environment:
+    STAGE: ${sls:stage}
+    REGION: ${aws:region}
+    TABLE_LEAGUES: ${self:service}-${sls:stage}-leagues
+    TABLE_LEAGUE_MEMBERS: ${self:service}-${sls:stage}-leagueMembers
+    TABLE_JOIN_REQUESTS: ${self:service}-${sls:stage}-joinRequests
+    TABLE_POINT_REQUESTS: ${self:service}-${sls:stage}-pointRequests
+    TABLE_USERS: ${self:service}-${sls:stage}-users
+    TABLE_CONNECTIONS: ${self:service}-${sls:stage}-connections
+    TABLE_LEAGUE_HISTORY: ${self:service}-${sls:stage}-leagueHistory
+    COGNITO_JWKS_URL: ${env:COGNITO_JWKS_URL, ''}
+    AUTH_PROVIDER: ${env:AUTH_PROVIDER, 'firebase'}
+    FIREBASE_PROJECT_ID: ${env:FIREBASE_PROJECT_ID, 'sportclash-fde3e'}
+    WS_ENDPOINT:
+      Fn::Join:
+        - ""
+        - - "https://"
+          - Ref: WebsocketsApi
+          - ".execute-api."
+          - Ref: AWS::Region
+          - ".amazonaws.com/"
+          - ${sls:stage}
+
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - dynamodb:GetItem
+            - dynamodb:BatchGetItem
+            - dynamodb:BatchWriteItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:DeleteItem
+            - dynamodb:TransactWriteItems
+            - dynamodb:Query
+            - dynamodb:Scan
+          Resource:
+            - Fn::GetAtt: [LeaguesTable, Arn]
+            - Fn::GetAtt: [LeagueMembersTable, Arn]
+            - Fn::GetAtt: [JoinRequestsTable, Arn]
+            - Fn::GetAtt: [PointRequestsTable, Arn]
+            - Fn::GetAtt: [UsersTable, Arn]
+            - Fn::GetAtt: [ConnectionsTable, Arn]
+            - Fn::GetAtt: [LeagueHistoryTable, Arn]
+            - Fn::Join:
+                - ""
+                - - Fn::GetAtt: [LeagueMembersTable, Arn]
+                  - "/index/*"
+            - Fn::Join:
+                - ""
+                - - Fn::GetAtt: [ConnectionsTable, Arn]
+                  - "/index/*"
+        - Effect: Allow
+          Action:
+            - execute-api:ManageConnections
+          Resource: "arn:aws:execute-api:*:*:*/${sls:stage}/POST/@connections/*"
+
+functions:
+  httpCreateLeague:
+    handler: src/handlers/httpCreateLeague.handler
+    events:
+      - httpApi:
+          method: POST
+          path: /leagues
+
+  httpGetMeLeagues:
+    handler: src/handlers/httpGetMeLeagues.handler
+    events:
+      - httpApi:
+          method: GET
+          path: /me/leagues
+
+  httpGetLeague:
+    handler: src/handlers/httpGetLeague.handler
+    events:
+      - httpApi:
+          method: GET
+          path: /leagues/{leagueId}
+
+  httpGetLeagueMembers:
+    handler: src/handlers/httpGetLeagueMembers.handler
+    events:
+      - httpApi:
+          method: GET
+          path: /leagues/{leagueId}/members
+
+  httpUpdateMemberRole:
+    handler: src/handlers/httpUpdateMemberRole.handler
+    events:
+      - httpApi:
+          method: PATCH
+          path: /leagues/{leagueId}/members/{targetUid}
+
+  httpRemoveMember:
+    handler: src/handlers/httpRemoveMember.handler
+    events:
+      - httpApi:
+          method: DELETE
+          path: /leagues/{leagueId}/members/{targetUid}
+
+  httpDeleteLeague:
+    handler: src/handlers/httpDeleteLeague.handler
+    events:
+      - httpApi:
+          method: DELETE
+          path: /leagues/{leagueId}
+
+  httpListLeagueHistory:
+    handler: src/handlers/httpListLeagueHistory.handler
+    events:
+      - httpApi:
+          method: GET
+          path: /leagues/{leagueId}/history
+
+  httpCreateJoinRequest:
+    handler: src/handlers/httpCreateJoinRequest.handler
+    events:
+      - httpApi:
+          method: POST
+          path: /leagues/{leagueId}/join-requests
+
+  httpListJoinRequests:
+    handler: src/handlers/httpListJoinRequests.handler
+    events:
+      - httpApi:
+          method: GET
+          path: /leagues/{leagueId}/join-requests
+
+  httpDecideJoinRequest:
+    handler: src/handlers/httpDecideJoinRequest.handler
+    events:
+      - httpApi:
+          method: POST
+          path: /leagues/{leagueId}/join-requests/{requestId}/decide
+
+  httpGetMyJoinRequest:
+    handler: src/handlers/httpGetMyJoinRequest.handler
+    events:
+      - httpApi:
+          method: GET
+          path: /leagues/{leagueId}/join-requests/me
+
+  httpCreatePointRequest:
+    handler: src/handlers/httpCreatePointRequest.handler
+    events:
+      - httpApi:
+          method: POST
+          path: /leagues/{leagueId}/point-requests
+
+  httpListPointRequests:
+    handler: src/handlers/httpListPointRequests.handler
+    events:
+      - httpApi:
+          method: GET
+          path: /leagues/{leagueId}/point-requests
+
+  httpGetMyPointRequests:
+    handler: src/handlers/httpGetMyPointRequests.handler
+    events:
+      - httpApi:
+          method: GET
+          path: /leagues/{leagueId}/point-requests/me
+
+  httpUpdateMyPointRequest:
+    handler: src/handlers/httpUpdateMyPointRequest.handler
+    events:
+      - httpApi:
+          method: PATCH
+          path: /leagues/{leagueId}/point-requests/{requestId}
+
+  httpDeleteMyPointRequest:
+    handler: src/handlers/httpDeleteMyPointRequest.handler
+    events:
+      - httpApi:
+          method: DELETE
+          path: /leagues/{leagueId}/point-requests/{requestId}
+
+  httpDecidePointRequest:
+    handler: src/handlers/httpDecidePointRequest.handler
+    events:
+      - httpApi:
+          method: POST
+          path: /leagues/{leagueId}/point-requests/{requestId}/decide
+
+  wsConnect:
+    handler: src/ws/connect.handler
+    events:
+      - websocket:
+          route: $connect
+
+  wsDisconnect:
+    handler: src/ws/disconnect.handler
+    events:
+      - websocket:
+          route: $disconnect
+
+  wsDefault:
+    handler: src/ws/subscribe.handler
+    events:
+      - websocket:
+          route: $default
+
+resources:
+  Resources:
+    LeaguesTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.TABLE_LEAGUES}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: leagueId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: leagueId
+            KeyType: HASH
+
+    LeagueMembersTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.TABLE_LEAGUE_MEMBERS}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: leagueId
+            AttributeType: S
+          - AttributeName: uid
+            AttributeType: S
+        KeySchema:
+          - AttributeName: leagueId
+            KeyType: HASH
+          - AttributeName: uid
+            KeyType: RANGE
+        GlobalSecondaryIndexes:
+          - IndexName: uid-index
+            KeySchema:
+              - AttributeName: uid
+                KeyType: HASH
+              - AttributeName: leagueId
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+
+    JoinRequestsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.TABLE_JOIN_REQUESTS}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: leagueId
+            AttributeType: S
+          - AttributeName: requestId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: leagueId
+            KeyType: HASH
+          - AttributeName: requestId
+            KeyType: RANGE
+
+    PointRequestsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.TABLE_POINT_REQUESTS}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: leagueId
+            AttributeType: S
+          - AttributeName: requestId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: leagueId
+            KeyType: HASH
+          - AttributeName: requestId
+            KeyType: RANGE
+
+    UsersTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.TABLE_USERS}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: uid
+            AttributeType: S
+        KeySchema:
+          - AttributeName: uid
+            KeyType: HASH
+
+    ConnectionsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.TABLE_CONNECTIONS}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: connectionId
+            AttributeType: S
+          - AttributeName: leagueId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: connectionId
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: leagueId-index
+            KeySchema:
+              - AttributeName: leagueId
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+
+    LeagueHistoryTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.TABLE_LEAGUE_HISTORY}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: leagueId
+            AttributeType: S
+          - AttributeName: eventId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: leagueId
+            KeyType: HASH
+          - AttributeName: eventId
+            KeyType: RANGE

@@ -2,7 +2,9 @@
 
 SportClash es una app web para competir con tus colegas en **ligas mensuales**: cada vez que haces deporte registras un **punto** (como solicitud), y los roles de moderación de la liga lo **aprueban o rechazan** para mantener el ranking limpio.
 
-Este repo es el **frontend** (Vue 3 + Vite + Tailwind) y usa **Firebase** (Auth + Firestore).
+Este repo es el **frontend** (Vue 3 + Vite + Tailwind) y usa **Firebase Auth**.
+
+Además, el proyecto soporta un backend propio en **AWS** (REST + WebSocket) como camino de migración desde Firestore.
 
 ## Estado actual (qué ya está hecho)
 
@@ -110,6 +112,38 @@ npm install
 npm run dev
 ```
 
+## Backend AWS (opcional)
+
+El frontend puede operar en 2 modos:
+
+- **Firestore** (por defecto): si `VITE_AWS_API_BASE_URL` está vacío.
+- **AWS**: si configuras `VITE_AWS_API_BASE_URL` (y opcionalmente `VITE_AWS_WS_URL` para real-time).
+
+Importante:
+
+- Incluso en modo AWS, el login sigue siendo con **Firebase Auth** (el frontend envía el `idToken` como `Authorization: Bearer ...`).
+- Para que el backend acepte tokens de Firebase, despliega el backend con `AUTH_PROVIDER=firebase`.
+
+### Variables de entorno (frontend)
+
+En tu `.env` (raíz) añade/ajusta:
+
+- `VITE_AWS_API_BASE_URL` (REST)
+- `VITE_AWS_WS_URL` (WebSocket, opcional)
+
+Si están vacías, el frontend sigue usando Firestore.
+
+### Cómo obtener las URLs (backend)
+
+Tras desplegar el backend, puedes ver los endpoints con:
+
+```bash
+cd backend
+npx serverless info
+```
+
+Usa esas URLs para rellenar `VITE_AWS_API_BASE_URL` y `VITE_AWS_WS_URL`.
+
 Build/preview:
 
 ```bash
@@ -146,6 +180,10 @@ Notas:
 - Reglas de seguridad de Firestore estables (roles y permisos sin “fallbacks”).
 - Mejoras de rendimiento (agregados/estadísticas precomputadas en servidor o funciones).
 - Mejoras de escalado en queries/listados (paginación y/o desnormalización).
+
+## Backend (AWS)
+
+El backend está en el folder [backend/README.md](backend/README.md).
 
 ## Documentación
 

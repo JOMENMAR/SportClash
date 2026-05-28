@@ -43,19 +43,39 @@
               </div>
 
               <div class="flex-1">
-                <select
-                  v-model="iconKey"
-                  class="sc-dark-select w-full px-4 py-3 text-sm text-white rounded-xl bg-white/10 ring-1 ring-white/10 focus:outline-none focus:ring-2 focus:ring-emerald-300/60"
+                <div
+                  class="grid grid-cols-6 gap-2 rounded-xl border border-white/10 bg-black/20 p-3"
                 >
-                  <option value="">Sin icono (usar letra)</option>
-                  <option
+                  <button
+                    type="button"
+                    class="inline-flex items-center justify-center rounded-xl px-2 py-2 text-xs font-semibold ring-1 transition"
+                    :class="
+                      !iconKey
+                        ? 'bg-emerald-300/15 text-emerald-100 ring-emerald-200/20'
+                        : 'bg-white/5 text-white/80 ring-white/10 hover:bg-white/10'
+                    "
+                    @click="iconKey = ''"
+                    title="Sin icono (usar inicial)"
+                  >
+                    Aa
+                  </button>
+
+                  <button
                     v-for="opt in iconOptions"
                     :key="opt.key"
-                    :value="opt.key"
+                    type="button"
+                    class="inline-flex items-center justify-center rounded-xl px-2 py-2 ring-1 transition"
+                    :class="
+                      iconKey === opt.key
+                        ? 'bg-emerald-300/15 text-emerald-100 ring-emerald-200/20'
+                        : 'bg-white/5 text-white/80 ring-white/10 hover:bg-white/10'
+                    "
+                    @click="iconKey = opt.key"
+                    :title="opt.label"
                   >
-                    {{ opt.label }}
-                  </option>
-                </select>
+                    <component :is="opt.icon" class="h-5 w-5" />
+                  </button>
+                </div>
                 <p class="mt-1 text-xs text-white/50">
                   Si no eliges nada, se usará la primera letra del nombre.
                 </p>

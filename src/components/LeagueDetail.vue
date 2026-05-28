@@ -71,7 +71,7 @@
           </div>
         </div>
 
-        <div class="flex flex-wrap gap-2 mt-2">
+        <div class="flex flex-wrap gap-2 mt-2 lg:hidden">
           <button
             v-for="t in tabs"
             :key="t.key"
@@ -174,747 +174,823 @@
             </div>
           </div>
 
-          <!-- Vista miembro -->
-          <div v-else>
-            <div v-if="activeTab === 'athletes'" class="space-y-3">
-              <div class="text-sm text-white/70">Atletas de la liga.</div>
-              <div class="p-4 border rounded-2xl border-white/10 bg-black/20">
-                <div class="text-xs text-white/60">Tu rol</div>
-                <div class="mt-1 font-semibold">{{ membership.role }}</div>
-              </div>
-
-              <div class="p-4 border rounded-2xl border-white/10 bg-black/20">
-                <div class="flex items-center justify-between gap-3">
-                  <div class="text-xs text-white/60">Miembros</div>
-                  <button
-                    type="button"
-                    class="px-3 py-2 text-xs font-semibold text-white transition rounded-xl bg-white/10 ring-1 ring-white/10 hover:bg-white/15"
-                    :disabled="membersLoading"
-                    @click="loadMembers"
-                  >
-                    {{ membersLoading ? "Cargando…" : "Actualizar" }}
-                  </button>
-                </div>
-
-                <div v-if="membersError" class="mt-2 text-sm text-rose-200">
-                  {{ membersError }}
-                </div>
-
-                <div
-                  v-else-if="membersLoading"
-                  class="mt-2 text-sm text-white/70"
-                >
-                  Cargando miembros…
-                </div>
-
-                <div
-                  v-else-if="!members.length"
-                  class="mt-2 text-sm text-white/70"
-                >
-                  Aún no hay miembros (o no tienes permisos para verlos).
-                </div>
-
-                <ul v-else class="mt-3 space-y-2">
-                  <li
-                    v-for="m in members"
-                    :key="m.id"
-                    class="p-3 border rounded-xl border-white/10 bg-white/5"
-                  >
-                    <div class="flex items-start justify-between gap-3">
-                      <div class="flex-1 min-w-0">
-                        <div class="text-sm font-semibold text-white">
-                          <button
-                            type="button"
-                            class="block truncate text-left text-white/80 hover:underline"
-                            :title="userLabel(m.uid)"
-                            @click="emit('open-profile', m.uid, leagueId)"
-                          >
-                            {{ userLabel(m.uid) }}
-                          </button>
-                        </div>
-                        <div class="mt-1 text-xs text-white/60">
-                          rol: <span class="font-semibold">{{ m.role }}</span>
-                        </div>
-                      </div>
-
-                      <div
-                        v-if="canManageMembers && m.uid !== myUid"
-                        class="shrink-0 flex flex-nowrap items-center gap-2"
-                      >
-                        <div class="flex flex-nowrap items-center gap-2">
-                          <label class="text-xs text-white/60 hidden sm:block"
-                            >Rol:</label
-                          >
-                          <select
-                            v-model="memberRoleDraft[m.id]"
-                            class="sc-dark-select px-2 py-2 text-xs text-white rounded-xl bg-white/10 ring-1 ring-white/10 focus:outline-none sm:px-3"
-                            :disabled="
-                              memberBusyId === m.id || m.role === 'owner'
-                            "
-                          >
-                            <option value="member">member</option>
-                            <option v-if="isOwner" value="admin">admin</option>
-                          </select>
-
-                          <button
-                            type="button"
-                            class="px-2 py-2 text-xs font-semibold transition rounded-xl bg-emerald-300 text-gray-950 ring-1 ring-emerald-200/30 hover:opacity-95 disabled:opacity-60 sm:px-3"
-                            :disabled="
-                              memberBusyId === m.id ||
-                              m.role === 'owner' ||
-                              memberRoleDraft[m.id] === m.role
-                            "
-                            @click="saveMemberRole(m)"
-                          >
-                            {{ memberBusyId === m.id ? "..." : "Guardar rol" }}
-                          </button>
-                        </div>
-
-                        <button
-                          type="button"
-                          class="px-2 py-2 text-xs font-semibold text-white transition rounded-xl bg-rose-500/80 ring-1 ring-rose-400/30 hover:bg-rose-500 disabled:opacity-60 sm:px-3"
-                          :disabled="
-                            memberBusyId === m.id || m.role === 'owner'
-                          "
-                          @click="openConfirmKick(m)"
-                        >
-                          {{ memberBusyId === m.id ? "..." : "Expulsar" }}
-                        </button>
-                      </div>
-                    </div>
-
-                    <div
-                      v-if="
-                        canManageMembers && m.uid !== myUid && membersActionMsg
-                      "
-                      class="mt-2 text-xs text-white/70"
-                    >
-                      {{ membersActionMsg }}
-                    </div>
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            <div v-else-if="activeTab === 'points'" class="space-y-3">
-              <div class="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  class="px-3 py-2 text-xs font-semibold transition rounded-xl ring-1"
-                  :class="
-                    pointsTab === 'mine'
-                      ? 'bg-emerald-300 text-gray-950 ring-emerald-200/30'
-                      : 'bg-white/10 text-white ring-white/10 hover:bg-white/15'
-                  "
-                  @click="pointsTab = 'mine'"
-                >
-                  Mis solicitudes
-                </button>
-                <button
-                  v-if="canModerate"
-                  type="button"
-                  class="px-3 py-2 text-xs font-semibold transition rounded-xl ring-1"
-                  :class="
-                    pointsTab === 'moderate'
-                      ? 'bg-emerald-300 text-gray-950 ring-emerald-200/30'
-                      : 'bg-white/10 text-white ring-white/10 hover:bg-white/15'
-                  "
-                  @click="pointsTab = 'moderate'"
-                >
-                  Aceptar puntos
-                </button>
-              </div>
-
-              <!-- Mis puntos / solicitudes -->
-              <div v-if="pointsTab === 'mine'" class="space-y-3">
-                <div class="p-4 border rounded-2xl border-white/10 bg-black/20">
-                  <div class="text-xs text-white/60">Solicitar puntos</div>
-                  <div class="flex flex-col gap-2 mt-2 sm:flex-row">
-                    <input
-                      v-model="performedOn"
-                      type="date"
-                      class="px-3 py-2 text-sm text-white rounded-xl bg-white/10 ring-1 ring-white/10 focus:outline-none"
-                    />
-                    <input
-                      v-model.trim="note"
-                      type="text"
-                      class="w-full px-3 py-2 text-sm text-white rounded-xl bg-white/10 ring-1 ring-white/10 focus:outline-none"
-                      placeholder="Nota (opcional)"
-                    />
+          <div v-if="membership">
+            <!-- Vista miembro -->
+            <div class="grid grid-cols-1 gap-4 lg:grid-cols-4">
+              <aside class="hidden lg:block lg:col-span-1">
+                <div class="rounded-2xl border border-white/10 bg-black/20 p-3">
+                  <div class="space-y-2">
                     <button
+                      v-for="t in tabs"
+                      :key="t.key"
                       type="button"
-                      class="px-4 py-2 text-sm font-semibold transition rounded-xl bg-emerald-300 text-gray-950 ring-1 ring-emerald-200/30 hover:opacity-95"
-                      :disabled="busy"
-                      @click="requestPoints"
+                      class="w-full inline-flex items-center gap-2 px-3 py-2 text-sm font-semibold transition rounded-xl ring-1 justify-start"
+                      :class="
+                        activeTab === t.key
+                          ? 'bg-emerald-300 text-gray-950 ring-emerald-200/30'
+                          : 'bg-white/10 text-white ring-white/10 hover:bg-white/15'
+                      "
+                      @click="activeTab = t.key"
                     >
-                      {{ busy ? "Enviando…" : "Solicitar" }}
+                      <component :is="t.icon" class="w-4 h-4 text-current" />
+                      {{ t.label }}
                     </button>
                   </div>
-                  <div class="mt-2 text-xs text-white/60">
-                    Cada solicitud vale
-                    <span class="font-semibold text-white">1</span> punto.
-                    <span class="block mt-1 text-white/60">
-                      La fecha es obligatoria.
-                    </span>
-                  </div>
-                  <div v-if="pointsMsg" class="mt-2 text-sm text-white/70">
-                    {{ pointsMsg }}
-                  </div>
                 </div>
+              </aside>
 
-                <div class="p-4 border rounded-2xl border-white/10 bg-black/20">
-                  <div class="flex items-center justify-between gap-3">
-                    <div class="text-xs text-white/60">Mis solicitudes</div>
-                    <div class="flex items-center gap-2">
+              <div class="lg:col-span-3">
+                <div v-if="activeTab === 'athletes'" class="space-y-3">
+                  <div class="text-sm text-white/70">Atletas de la liga.</div>
+                  <div
+                    class="p-4 border rounded-2xl border-white/10 bg-black/20"
+                  >
+                    <div class="text-xs text-white/60">Tu rol</div>
+                    <div class="mt-1 font-semibold">{{ membership.role }}</div>
+                  </div>
+
+                  <div
+                    class="p-4 border rounded-2xl border-white/10 bg-black/20"
+                  >
+                    <div class="flex items-center justify-between gap-3">
+                      <div class="text-xs text-white/60">Miembros</div>
                       <button
-                        v-if="rejectedMyRequests.length"
                         type="button"
                         class="px-3 py-2 text-xs font-semibold text-white transition rounded-xl bg-white/10 ring-1 ring-white/10 hover:bg-white/15"
-                        @click="showRejectedModal = true"
+                        :disabled="membersLoading"
+                        @click="loadMembers"
                       >
-                        Rechazadas ({{ rejectedMyRequests.length }})
-                      </button>
-                      <button
-                        type="button"
-                        class="px-3 py-2 text-xs font-semibold text-white transition rounded-xl bg-white/10 ring-1 ring-white/10 hover:bg-white/15"
-                        :disabled="myReqLoading"
-                        @click="loadMyRequests"
-                      >
-                        {{ myReqLoading ? "Cargando…" : "Actualizar" }}
+                        {{ membersLoading ? "Cargando…" : "Actualizar" }}
                       </button>
                     </div>
-                  </div>
 
-                  <div v-if="myReqError" class="mt-2 text-sm text-rose-200">
-                    {{ myReqError }}
-                  </div>
+                    <div v-if="membersError" class="mt-2 text-sm text-rose-200">
+                      {{ membersError }}
+                    </div>
 
-                  <div
-                    v-else-if="myReqLoading"
-                    class="mt-2 text-sm text-white/70"
-                  >
-                    Cargando tus solicitudes…
-                  </div>
-
-                  <div
-                    v-else-if="!visibleMyRequests.length"
-                    class="mt-2 text-sm text-white/70"
-                  >
-                    No tienes solicitudes visibles.
-                    <span v-if="rejectedMyRequests.length">
-                      (Tienes {{ rejectedMyRequests.length }} rechazadas en el
-                      historial.)
-                    </span>
-                  </div>
-
-                  <ul v-else class="mt-3 space-y-2">
-                    <li
-                      v-for="r in visibleMyRequests"
-                      :key="r.id"
-                      class="p-3 border rounded-xl border-white/10 bg-white/5"
-                    >
-                      <div class="flex items-start justify-between gap-3">
-                        <div class="min-w-0">
-                          <div class="text-sm font-semibold text-white">
-                            <span
-                              class="inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-lg"
-                              :class="
-                                r.status === 'pending'
-                                  ? 'bg-white/10 text-white'
-                                  : r.status === 'approved'
-                                    ? 'bg-emerald-300 text-gray-950'
-                                    : 'bg-rose-500/80 text-white'
-                              "
-                            >
-                              {{
-                                r.status === "pending"
-                                  ? "pendiente"
-                                  : r.status === "approved"
-                                    ? "aprobada"
-                                    : "rechazada"
-                              }}
-                            </span>
-                            <span
-                              class="ml-2 text-xs font-normal text-white/60"
-                            >
-                              · +{{ r.points }}
-                            </span>
-                          </div>
-
-                          <div class="mt-2">
-                            <input
-                              v-model.trim="myEditNote[r.id]"
-                              type="text"
-                              class="w-full px-3 py-2 text-sm text-white rounded-xl bg-white/10 ring-1 ring-white/10 focus:outline-none"
-                              :disabled="
-                                r.status !== 'pending' || myReqBusyId === r.id
-                              "
-                              placeholder="Nota (opcional)"
-                            />
-                          </div>
-                        </div>
-
-                        <div class="flex flex-col gap-2 sm:flex-row">
-                          <button
-                            type="button"
-                            class="px-3 py-2 text-xs font-semibold text-white transition rounded-xl bg-white/10 ring-1 ring-white/10 hover:bg-white/15 disabled:opacity-60"
-                            :disabled="
-                              r.status !== 'pending' || myReqBusyId === r.id
-                            "
-                            @click="saveMyRequest(r)"
-                          >
-                            {{ myReqBusyId === r.id ? "..." : "Guardar" }}
-                          </button>
-                          <button
-                            type="button"
-                            class="px-3 py-2 text-xs font-semibold text-white transition rounded-xl bg-rose-500/80 ring-1 ring-rose-400/30 hover:bg-rose-500 disabled:opacity-60"
-                            :disabled="
-                              r.status !== 'pending' || myReqBusyId === r.id
-                            "
-                            @click="openConfirmDeleteRequest(r)"
-                          >
-                            {{ myReqBusyId === r.id ? "..." : "Borrar" }}
-                          </button>
-                        </div>
-                      </div>
-                    </li>
-                  </ul>
-                </div>
-
-                <!-- Modal: Historial de rechazadas (overlay global) -->
-                <Teleport to="body">
-                  <div
-                    v-if="showRejectedModal"
-                    class="fixed inset-0 z-[9999] overflow-hidden"
-                    @click.self="showRejectedModal = false"
-                  >
                     <div
-                      class="absolute inset-0 bg-black/60 backdrop-blur-sm"
-                    />
-
-                    <!-- Cubo centrado que NUNCA provoca scroll fuera -->
-                    <div
-                      class="absolute inset-0 grid items-start justify-items-center p-4 pt-[6vh] sm:pt-[8vh]"
+                      v-else-if="membersLoading"
+                      class="mt-2 text-sm text-white/70"
                     >
-                      <div
-                        class="relative flex flex-col w-full overflow-hidden border shadow-2xl rounded-2xl border-white/10 bg-gray-950/80 ring-1 ring-white/5"
-                        style="
-                          width: min(92vw, 42rem);
-                          max-height: min(72dvh, 560px);
-                        "
+                      Cargando miembros…
+                    </div>
+
+                    <div
+                      v-else-if="!members.length"
+                      class="mt-2 text-sm text-white/70"
+                    >
+                      Aún no hay miembros (o no tienes permisos para verlos).
+                    </div>
+
+                    <ul v-else class="mt-3 space-y-2">
+                      <li
+                        v-for="m in members"
+                        :key="m.id"
+                        class="p-3 border rounded-xl border-white/10 bg-white/5"
                       >
-                        <div
-                          class="flex items-start justify-between gap-3 p-4 border-b border-white/10 bg-white/5"
-                        >
-                          <div>
+                        <div class="flex items-start justify-between gap-3">
+                          <div class="flex-1 min-w-0">
                             <div class="text-sm font-semibold text-white">
-                              Historial de rechazadas
+                              <button
+                                type="button"
+                                class="block truncate text-left text-white/80 hover:underline"
+                                :title="userLabel(m.uid)"
+                                @click="emit('open-profile', m.uid, leagueId)"
+                              >
+                                {{ userLabel(m.uid) }}
+                              </button>
                             </div>
                             <div class="mt-1 text-xs text-white/60">
-                              Estas solicitudes no cuentan. Puedes revisarlas y
-                              crear una nueva si hace falta.
+                              rol:
+                              <span class="font-semibold">{{ m.role }}</span>
                             </div>
                           </div>
+
+                          <div
+                            v-if="canManageMembers && m.uid !== myUid"
+                            class="shrink-0 flex flex-nowrap items-center gap-2"
+                          >
+                            <div class="flex flex-nowrap items-center gap-2">
+                              <label
+                                class="text-xs text-white/60 hidden sm:block"
+                                >Rol:</label
+                              >
+                              <select
+                                v-model="memberRoleDraft[m.id]"
+                                class="sc-dark-select px-2 py-2 text-xs text-white rounded-xl bg-white/10 ring-1 ring-white/10 focus:outline-none sm:px-3"
+                                :disabled="
+                                  memberBusyId === m.id || m.role === 'owner'
+                                "
+                              >
+                                <option value="member">member</option>
+                                <option v-if="isOwner" value="admin">
+                                  admin
+                                </option>
+                              </select>
+
+                              <button
+                                type="button"
+                                class="px-2 py-2 text-xs font-semibold transition rounded-xl bg-emerald-300 text-gray-950 ring-1 ring-emerald-200/30 hover:opacity-95 disabled:opacity-60 sm:px-3"
+                                :disabled="
+                                  memberBusyId === m.id ||
+                                  m.role === 'owner' ||
+                                  memberRoleDraft[m.id] === m.role
+                                "
+                                @click="saveMemberRole(m)"
+                              >
+                                {{
+                                  memberBusyId === m.id ? "..." : "Guardar rol"
+                                }}
+                              </button>
+                            </div>
+
+                            <button
+                              type="button"
+                              class="px-2 py-2 text-xs font-semibold text-white transition rounded-xl bg-rose-500/80 ring-1 ring-rose-400/30 hover:bg-rose-500 disabled:opacity-60 sm:px-3"
+                              :disabled="
+                                memberBusyId === m.id || m.role === 'owner'
+                              "
+                              @click="openConfirmKick(m)"
+                            >
+                              {{ memberBusyId === m.id ? "..." : "Expulsar" }}
+                            </button>
+                          </div>
+                        </div>
+
+                        <div
+                          v-if="
+                            canManageMembers &&
+                            m.uid !== myUid &&
+                            membersActionMsg
+                          "
+                          class="mt-2 text-xs text-white/70"
+                        >
+                          {{ membersActionMsg }}
+                        </div>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div v-else-if="activeTab === 'points'" class="space-y-3">
+                  <div class="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      class="px-3 py-2 text-xs font-semibold transition rounded-xl ring-1"
+                      :class="
+                        pointsTab === 'mine'
+                          ? 'bg-emerald-300 text-gray-950 ring-emerald-200/30'
+                          : 'bg-white/10 text-white ring-white/10 hover:bg-white/15'
+                      "
+                      @click="pointsTab = 'mine'"
+                    >
+                      Mis solicitudes
+                    </button>
+                    <button
+                      v-if="canModerate"
+                      type="button"
+                      class="px-3 py-2 text-xs font-semibold transition rounded-xl ring-1"
+                      :class="
+                        pointsTab === 'moderate'
+                          ? 'bg-emerald-300 text-gray-950 ring-emerald-200/30'
+                          : 'bg-white/10 text-white ring-white/10 hover:bg-white/15'
+                      "
+                      @click="pointsTab = 'moderate'"
+                    >
+                      Aceptar puntos
+                    </button>
+                  </div>
+
+                  <!-- Mis puntos / solicitudes -->
+                  <div v-if="pointsTab === 'mine'" class="space-y-3">
+                    <div
+                      class="p-4 border rounded-2xl border-white/10 bg-black/20"
+                    >
+                      <div class="text-xs text-white/60">Solicitar puntos</div>
+                      <div class="flex flex-col gap-2 mt-2 sm:flex-row">
+                        <input
+                          v-model="performedOn"
+                          type="date"
+                          class="px-3 py-2 text-sm text-white rounded-xl bg-white/10 ring-1 ring-white/10 focus:outline-none"
+                        />
+                        <input
+                          v-model.trim="note"
+                          type="text"
+                          class="w-full px-3 py-2 text-sm text-white rounded-xl bg-white/10 ring-1 ring-white/10 focus:outline-none"
+                          placeholder="Nota (opcional)"
+                        />
+                        <button
+                          type="button"
+                          class="px-4 py-2 text-sm font-semibold transition rounded-xl bg-emerald-300 text-gray-950 ring-1 ring-emerald-200/30 hover:opacity-95"
+                          :disabled="busy"
+                          @click="requestPoints"
+                        >
+                          {{ busy ? "Enviando…" : "Solicitar" }}
+                        </button>
+                      </div>
+                      <div class="mt-2 text-xs text-white/60">
+                        Cada solicitud vale
+                        <span class="font-semibold text-white">1</span> punto.
+                        <span class="block mt-1 text-white/60">
+                          La fecha es obligatoria.
+                        </span>
+                      </div>
+                      <div v-if="pointsMsg" class="mt-2 text-sm text-white/70">
+                        {{ pointsMsg }}
+                      </div>
+                    </div>
+
+                    <div
+                      class="p-4 border rounded-2xl border-white/10 bg-black/20"
+                    >
+                      <div class="flex items-center justify-between gap-3">
+                        <div class="text-xs text-white/60">Mis solicitudes</div>
+                        <div class="flex items-center gap-2">
+                          <button
+                            v-if="rejectedMyRequests.length"
+                            type="button"
+                            class="px-3 py-2 text-xs font-semibold text-white transition rounded-xl bg-white/10 ring-1 ring-white/10 hover:bg-white/15"
+                            @click="showRejectedModal = true"
+                          >
+                            Rechazadas ({{ rejectedMyRequests.length }})
+                          </button>
                           <button
                             type="button"
                             class="px-3 py-2 text-xs font-semibold text-white transition rounded-xl bg-white/10 ring-1 ring-white/10 hover:bg-white/15"
-                            @click="showRejectedModal = false"
+                            :disabled="myReqLoading"
+                            @click="loadMyRequests"
                           >
-                            Cerrar
+                            {{ myReqLoading ? "Cargando…" : "Actualizar" }}
                           </button>
                         </div>
+                      </div>
 
-                        <div class="flex-1 p-4 overflow-hidden">
-                          <div
-                            v-if="!rejectedMyRequests.length"
-                            class="text-sm text-white/70"
-                          >
-                            No tienes rechazadas.
-                          </div>
+                      <div v-if="myReqError" class="mt-2 text-sm text-rose-200">
+                        {{ myReqError }}
+                      </div>
 
-                          <div
-                            v-else
-                            class="overflow-x-hidden overflow-y-auto"
-                            style="max-height: 396px"
-                          >
-                            <ul class="flex flex-col justify-end gap-2">
-                              <li
-                                v-for="r in rejectedMyRequests"
-                                :key="r.id"
-                                class="p-3 border rounded-xl border-white/10 bg-white/5"
-                              >
-                                <div
-                                  class="flex items-start justify-between gap-3"
+                      <div
+                        v-else-if="myReqLoading"
+                        class="mt-2 text-sm text-white/70"
+                      >
+                        Cargando tus solicitudes…
+                      </div>
+
+                      <div
+                        v-else-if="!visibleMyRequests.length"
+                        class="mt-2 text-sm text-white/70"
+                      >
+                        No tienes solicitudes visibles.
+                        <span v-if="rejectedMyRequests.length">
+                          (Tienes {{ rejectedMyRequests.length }} rechazadas en
+                          el historial.)
+                        </span>
+                      </div>
+
+                      <ul v-else class="mt-3 space-y-2">
+                        <li
+                          v-for="r in visibleMyRequests"
+                          :key="r.id"
+                          class="p-3 border rounded-xl border-white/10 bg-white/5"
+                        >
+                          <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0">
+                              <div class="text-sm font-semibold text-white">
+                                <span
+                                  class="inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-lg"
+                                  :class="
+                                    r.status === 'pending'
+                                      ? 'bg-white/10 text-white'
+                                      : r.status === 'approved'
+                                        ? 'bg-emerald-300 text-gray-950'
+                                        : 'bg-rose-500/80 text-white'
+                                  "
                                 >
-                                  <div class="min-w-0">
-                                    <div
-                                      class="text-sm font-semibold text-white"
-                                    >
-                                      Rechazada · +{{ r.points }}
-                                    </div>
-                                    <div
-                                      v-if="r.note"
-                                      class="mt-1 text-xs text-white/70"
-                                    >
-                                      Tu nota: “{{ r.note }}”
-                                    </div>
-                                    <div
-                                      v-if="r.rejectReason"
-                                      class="p-2 mt-2 text-xs border rounded-xl border-rose-400/20 bg-rose-500/10 text-rose-100"
-                                    >
-                                      <span class="font-semibold">Motivo:</span>
-                                      <span class="opacity-90">{{
-                                        r.rejectReason
-                                      }}</span>
-                                    </div>
-                                    <div
-                                      v-if="r.rejectedOn"
-                                      class="mt-2 text-[11px] text-white/60"
-                                    >
-                                      Rechazada el:
-                                      <span class="font-semibold">{{
-                                        r.rejectedOn
-                                      }}</span>
-                                    </div>
-                                  </div>
+                                  {{
+                                    r.status === "pending"
+                                      ? "pendiente"
+                                      : r.status === "approved"
+                                        ? "aprobada"
+                                        : "rechazada"
+                                  }}
+                                </span>
+                                <span
+                                  class="ml-2 text-xs font-normal text-white/60"
+                                >
+                                  · +{{ r.points }}
+                                </span>
+                              </div>
+
+                              <div class="mt-2">
+                                <input
+                                  v-model.trim="myEditNote[r.id]"
+                                  type="text"
+                                  class="w-full px-3 py-2 text-sm text-white rounded-xl bg-white/10 ring-1 ring-white/10 focus:outline-none"
+                                  :disabled="
+                                    r.status !== 'pending' ||
+                                    myReqBusyId === r.id
+                                  "
+                                  placeholder="Nota (opcional)"
+                                />
+                              </div>
+                            </div>
+
+                            <div class="flex flex-col gap-2 sm:flex-row">
+                              <button
+                                type="button"
+                                class="px-3 py-2 text-xs font-semibold text-white transition rounded-xl bg-white/10 ring-1 ring-white/10 hover:bg-white/15 disabled:opacity-60"
+                                :disabled="
+                                  r.status !== 'pending' || myReqBusyId === r.id
+                                "
+                                @click="saveMyRequest(r)"
+                              >
+                                {{ myReqBusyId === r.id ? "..." : "Guardar" }}
+                              </button>
+                              <button
+                                type="button"
+                                class="px-3 py-2 text-xs font-semibold text-white transition rounded-xl bg-rose-500/80 ring-1 ring-rose-400/30 hover:bg-rose-500 disabled:opacity-60"
+                                :disabled="
+                                  r.status !== 'pending' || myReqBusyId === r.id
+                                "
+                                @click="openConfirmDeleteRequest(r)"
+                              >
+                                {{ myReqBusyId === r.id ? "..." : "Borrar" }}
+                              </button>
+                            </div>
+                          </div>
+                        </li>
+                      </ul>
+                    </div>
+
+                    <!-- Modal: Historial de rechazadas (overlay global) -->
+                    <Teleport to="body">
+                      <div
+                        v-if="showRejectedModal"
+                        class="fixed inset-0 z-[9999] overflow-hidden"
+                        @click.self="showRejectedModal = false"
+                      >
+                        <div
+                          class="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                        />
+
+                        <!-- Cubo centrado que NUNCA provoca scroll fuera -->
+                        <div
+                          class="absolute inset-0 grid items-start justify-items-center p-4 pt-[6vh] sm:pt-[8vh]"
+                        >
+                          <div
+                            class="relative flex flex-col w-full overflow-hidden border shadow-2xl rounded-2xl border-white/10 bg-gray-950/80 ring-1 ring-white/5"
+                            style="
+                              width: min(92vw, 42rem);
+                              max-height: min(72dvh, 560px);
+                            "
+                          >
+                            <div
+                              class="flex items-start justify-between gap-3 p-4 border-b border-white/10 bg-white/5"
+                            >
+                              <div>
+                                <div class="text-sm font-semibold text-white">
+                                  Historial de rechazadas
                                 </div>
-                              </li>
-                            </ul>
+                                <div class="mt-1 text-xs text-white/60">
+                                  Estas solicitudes no cuentan. Puedes
+                                  revisarlas y crear una nueva si hace falta.
+                                </div>
+                              </div>
+                              <button
+                                type="button"
+                                class="px-3 py-2 text-xs font-semibold text-white transition rounded-xl bg-white/10 ring-1 ring-white/10 hover:bg-white/15"
+                                @click="showRejectedModal = false"
+                              >
+                                Cerrar
+                              </button>
+                            </div>
+
+                            <div class="flex-1 p-4 overflow-hidden">
+                              <div
+                                v-if="!rejectedMyRequests.length"
+                                class="text-sm text-white/70"
+                              >
+                                No tienes rechazadas.
+                              </div>
+
+                              <div
+                                v-else
+                                class="overflow-x-hidden overflow-y-auto"
+                                style="max-height: 396px"
+                              >
+                                <ul class="flex flex-col justify-end gap-2">
+                                  <li
+                                    v-for="r in rejectedMyRequests"
+                                    :key="r.id"
+                                    class="p-3 border rounded-xl border-white/10 bg-white/5"
+                                  >
+                                    <div
+                                      class="flex items-start justify-between gap-3"
+                                    >
+                                      <div class="min-w-0">
+                                        <div
+                                          class="text-sm font-semibold text-white"
+                                        >
+                                          Rechazada · +{{ r.points }}
+                                        </div>
+                                        <div
+                                          v-if="r.note"
+                                          class="mt-1 text-xs text-white/70"
+                                        >
+                                          Tu nota: “{{ r.note }}”
+                                        </div>
+                                        <div
+                                          v-if="r.rejectReason"
+                                          class="p-2 mt-2 text-xs border rounded-xl border-rose-400/20 bg-rose-500/10 text-rose-100"
+                                        >
+                                          <span class="font-semibold"
+                                            >Motivo:</span
+                                          >
+                                          <span class="opacity-90">{{
+                                            r.rejectReason
+                                          }}</span>
+                                        </div>
+                                        <div
+                                          v-if="r.rejectedOn"
+                                          class="mt-2 text-[11px] text-white/60"
+                                        >
+                                          Rechazada el:
+                                          <span class="font-semibold">{{
+                                            r.rejectedOn
+                                          }}</span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </li>
+                                </ul>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
+                    </Teleport>
+                  </div>
+
+                  <!-- Moderación (admins/mods) -->
+                  <div v-else class="space-y-3">
+                    <div
+                      class="p-4 border rounded-2xl border-white/10 bg-black/20"
+                    >
+                      <div class="flex items-center justify-between gap-3">
+                        <div class="text-xs text-white/60">
+                          Solicitudes pendientes
+                        </div>
+                        <button
+                          type="button"
+                          class="px-3 py-2 text-xs font-semibold text-white transition rounded-xl bg-white/10 ring-1 ring-white/10 hover:bg-white/15"
+                          :disabled="pendingLoading"
+                          @click="loadPending"
+                        >
+                          {{ pendingLoading ? "Cargando…" : "Actualizar" }}
+                        </button>
+                      </div>
+
+                      <div
+                        v-if="pendingError"
+                        class="mt-2 text-sm text-rose-200"
+                      >
+                        {{ pendingError }}
+                      </div>
+
+                      <div
+                        v-else-if="pendingLoading"
+                        class="mt-2 text-sm text-white/70"
+                      >
+                        Cargando solicitudes…
+                      </div>
+
+                      <div
+                        v-else-if="!pendingRequests.length"
+                        class="mt-2 text-sm text-white/70"
+                      >
+                        No hay solicitudes pendientes.
+                      </div>
+
+                      <ul v-else class="mt-3 space-y-2">
+                        <li
+                          v-for="r in pendingRequests"
+                          :key="r.id"
+                          class="p-3 border rounded-xl border-white/10 bg-white/5"
+                        >
+                          <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0">
+                              <div class="text-sm font-semibold text-white">
+                                +{{ r.points }}
+                                <span class="text-xs font-normal text-white/60">
+                                  ·
+                                  <button
+                                    type="button"
+                                    class="hover:underline"
+                                    :title="userLabel(r.uid)"
+                                    @click="
+                                      emit('open-profile', r.uid, leagueId)
+                                    "
+                                  >
+                                    {{ userLabel(r.uid) }}
+                                  </button>
+                                </span>
+                              </div>
+                              <div
+                                v-if="r.note"
+                                class="mt-1 text-xs text-white/70"
+                              >
+                                “{{ r.note }}”
+                              </div>
+
+                              <div class="mt-2">
+                                <input
+                                  v-model.trim="rejectDraft[r.id]"
+                                  type="text"
+                                  class="w-full px-3 py-2 text-xs text-white rounded-xl bg-white/10 ring-1 ring-white/10 focus:outline-none"
+                                  :disabled="moderateBusyId === r.id"
+                                  placeholder="Motivo (solo si rechazas)"
+                                />
+                              </div>
+                            </div>
+
+                            <div class="flex flex-col gap-2 sm:flex-row">
+                              <button
+                                type="button"
+                                class="px-3 py-2 text-xs font-semibold transition rounded-xl bg-emerald-300 text-gray-950 ring-1 ring-emerald-200/30 hover:opacity-95 disabled:opacity-60"
+                                :disabled="
+                                  moderateBusyId === r.id ||
+                                  (isOwnPointRequest(r) && !canSelfModerate)
+                                "
+                                @click="decideRequest(r, 'approved')"
+                              >
+                                {{
+                                  moderateBusyId === r.id ? "..." : "Aprobar"
+                                }}
+                              </button>
+                              <button
+                                type="button"
+                                class="px-3 py-2 text-xs font-semibold text-white transition rounded-xl bg-rose-500/80 ring-1 ring-rose-400/30 hover:bg-rose-500 disabled:opacity-60"
+                                :disabled="
+                                  moderateBusyId === r.id ||
+                                  (isOwnPointRequest(r) && !canSelfModerate)
+                                "
+                                @click="decideRequest(r, 'rejected')"
+                              >
+                                {{
+                                  moderateBusyId === r.id ? "..." : "Rechazar"
+                                }}
+                              </button>
+                            </div>
+
+                            <div
+                              v-if="isOwnPointRequest(r) && !canSelfModerate"
+                              class="mt-2 text-[11px] text-white/50"
+                            >
+                              No puedes moderar tu propia solicitud.
+                            </div>
+                          </div>
+                        </li>
+                      </ul>
                     </div>
                   </div>
-                </Teleport>
-              </div>
+                </div>
 
-              <!-- Moderación (admins/mods) -->
-              <div v-else class="space-y-3">
-                <div class="p-4 border rounded-2xl border-white/10 bg-black/20">
+                <div v-else-if="activeTab === 'ranking'" class="space-y-3">
+                  <div class="text-sm text-white/70">
+                    Ranking por puntos aprobados.
+                  </div>
+
+                  <div
+                    class="p-4 border rounded-2xl border-white/10 bg-black/20"
+                  >
+                    <div class="flex items-center justify-between gap-3">
+                      <div class="text-xs text-white/60">Tabla</div>
+                      <button
+                        type="button"
+                        class="px-3 py-2 text-xs font-semibold text-white transition rounded-xl bg-white/10 ring-1 ring-white/10 hover:bg-white/15"
+                        :disabled="rankingLoading"
+                        @click="loadRanking"
+                      >
+                        {{ rankingLoading ? "Cargando…" : "Actualizar" }}
+                      </button>
+                    </div>
+
+                    <div v-if="rankingError" class="mt-2 text-sm text-rose-200">
+                      {{ rankingError }}
+                    </div>
+                    <div
+                      v-else-if="rankingLoading"
+                      class="mt-2 text-sm text-white/70"
+                    >
+                      Cargando ranking…
+                    </div>
+                    <div
+                      v-else-if="!rankingRows.length"
+                      class="mt-2 text-sm text-white/70"
+                    >
+                      Aún no hay puntos aprobados.
+                    </div>
+
+                    <ol v-else class="mt-3 space-y-2">
+                      <li
+                        v-for="row in rankingRows"
+                        :key="row.uid"
+                        class="p-3 border rounded-xl border-white/10 bg-white/5"
+                      >
+                        <div class="flex items-center justify-between gap-3">
+                          <div class="min-w-0">
+                            <div
+                              class="text-sm font-semibold text-white truncate"
+                            >
+                              #{{ row.rank }} ·
+                              <button
+                                type="button"
+                                class="hover:underline"
+                                :title="userLabel(row.uid)"
+                                @click="emit('open-profile', row.uid, leagueId)"
+                              >
+                                {{ userLabel(row.uid) }}
+                              </button>
+                            </div>
+                            <div class="mt-1 text-xs text-white/60">
+                              Puntos aprobados:
+                              <span class="font-semibold">{{
+                                row.points
+                              }}</span>
+                            </div>
+                          </div>
+                          <div class="text-lg font-extrabold text-emerald-300">
+                            {{ row.points }}
+                          </div>
+                        </div>
+                      </li>
+                    </ol>
+                  </div>
+                </div>
+
+                <div v-else-if="activeTab === 'history'" class="space-y-3">
+                  <div
+                    class="p-4 border rounded-2xl border-white/10 bg-black/20"
+                  >
+                    <div class="flex items-center justify-between gap-3">
+                      <div class="text-xs text-white/60">Historial</div>
+                      <button
+                        type="button"
+                        class="px-3 py-2 text-xs font-semibold text-white transition rounded-xl bg-white/10 ring-1 ring-white/10 hover:bg-white/15"
+                        :disabled="historyLoading"
+                        @click="loadHistory"
+                      >
+                        {{ historyLoading ? "Cargando…" : "Actualizar" }}
+                      </button>
+                    </div>
+
+                    <div v-if="historyError" class="mt-2 text-sm text-rose-200">
+                      {{ historyError }}
+                    </div>
+
+                    <div
+                      v-else-if="historyLoading"
+                      class="mt-2 text-sm text-white/70"
+                    >
+                      Cargando historial…
+                    </div>
+
+                    <div
+                      v-else-if="!historyItems.length"
+                      class="mt-2 text-sm text-white/70"
+                    >
+                      Aún no hay eventos.
+                    </div>
+
+                    <ul v-else class="mt-3 space-y-2">
+                      <li
+                        v-for="it in historyItems"
+                        :key="it.id"
+                        class="p-3 border rounded-xl border-white/10 bg-white/5"
+                      >
+                        <div class="flex items-start justify-between gap-3">
+                          <div class="min-w-0">
+                            <div
+                              class="text-sm font-semibold text-white truncate"
+                            >
+                              {{ historyTitle(it) }}
+                            </div>
+                            <div class="mt-1 text-xs break-words text-white/60">
+                              {{ historySubtitle(it) }}
+                            </div>
+                          </div>
+                          <div class="text-[11px] text-white/50">
+                            {{ historyMeta(it) }}
+                          </div>
+                        </div>
+
+                        <details class="mt-2">
+                          <summary class="text-xs cursor-pointer text-white/70">
+                            Ver detalle
+                          </summary>
+                          <pre
+                            class="mt-2 p-2 overflow-auto text-[11px] leading-snug rounded-lg bg-black/30 text-white/70"
+                            >{{
+                              JSON.stringify(it.payload || {}, null, 2)
+                            }}</pre
+                          >
+                        </details>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div class="text-xs text-white/50">
+                    Tip: aquí verás quién solicitó, quién gestionó
+                    (aprobó/rechazó), y el motivo cuando exista.
+                  </div>
+                </div>
+
+                <div
+                  v-else-if="activeTab === 'join'"
+                  class="p-4 border rounded-2xl border-white/10 bg-black/20"
+                >
                   <div class="flex items-center justify-between gap-3">
                     <div class="text-xs text-white/60">
-                      Solicitudes pendientes
+                      Solicitudes de unión
                     </div>
                     <button
                       type="button"
                       class="px-3 py-2 text-xs font-semibold text-white transition rounded-xl bg-white/10 ring-1 ring-white/10 hover:bg-white/15"
-                      :disabled="pendingLoading"
-                      @click="loadPending"
+                      :disabled="joinLoading"
+                      @click="loadJoinRequests"
                     >
-                      {{ pendingLoading ? "Cargando…" : "Actualizar" }}
+                      {{ joinLoading ? "Cargando…" : "Actualizar" }}
                     </button>
                   </div>
 
-                  <div v-if="pendingError" class="mt-2 text-sm text-rose-200">
-                    {{ pendingError }}
+                  <div v-if="joinError" class="mt-2 text-sm text-rose-200">
+                    {{ joinError }}
                   </div>
 
                   <div
-                    v-else-if="pendingLoading"
+                    v-else-if="joinLoading"
                     class="mt-2 text-sm text-white/70"
                   >
                     Cargando solicitudes…
                   </div>
 
-                  <div
-                    v-else-if="!pendingRequests.length"
-                    class="mt-2 text-sm text-white/70"
-                  >
-                    No hay solicitudes pendientes.
-                  </div>
-
-                  <ul v-else class="mt-3 space-y-2">
-                    <li
-                      v-for="r in pendingRequests"
-                      :key="r.id"
-                      class="p-3 border rounded-xl border-white/10 bg-white/5"
-                    >
-                      <div class="flex items-start justify-between gap-3">
-                        <div class="min-w-0">
-                          <div class="text-sm font-semibold text-white">
-                            +{{ r.points }}
-                            <span class="text-xs font-normal text-white/60">
-                              ·
-                              <button
-                                type="button"
-                                class="hover:underline"
-                                :title="userLabel(r.uid)"
-                                @click="emit('open-profile', r.uid, leagueId)"
-                              >
-                                {{ userLabel(r.uid) }}
-                              </button>
-                            </span>
-                          </div>
-                          <div v-if="r.note" class="mt-1 text-xs text-white/70">
-                            “{{ r.note }}”
-                          </div>
-
-                          <div class="mt-2">
-                            <input
-                              v-model.trim="rejectDraft[r.id]"
-                              type="text"
-                              class="w-full px-3 py-2 text-xs text-white rounded-xl bg-white/10 ring-1 ring-white/10 focus:outline-none"
-                              :disabled="moderateBusyId === r.id"
-                              placeholder="Motivo (solo si rechazas)"
-                            />
-                          </div>
-                        </div>
-
-                        <div class="flex flex-col gap-2 sm:flex-row">
-                          <button
-                            type="button"
-                            class="px-3 py-2 text-xs font-semibold transition rounded-xl bg-emerald-300 text-gray-950 ring-1 ring-emerald-200/30 hover:opacity-95 disabled:opacity-60"
-                            :disabled="
-                              moderateBusyId === r.id ||
-                              (isOwnPointRequest(r) && !canSelfModerate)
-                            "
-                            @click="decideRequest(r, 'approved')"
-                          >
-                            {{ moderateBusyId === r.id ? "..." : "Aprobar" }}
-                          </button>
-                          <button
-                            type="button"
-                            class="px-3 py-2 text-xs font-semibold text-white transition rounded-xl bg-rose-500/80 ring-1 ring-rose-400/30 hover:bg-rose-500 disabled:opacity-60"
-                            :disabled="
-                              moderateBusyId === r.id ||
-                              (isOwnPointRequest(r) && !canSelfModerate)
-                            "
-                            @click="decideRequest(r, 'rejected')"
-                          >
-                            {{ moderateBusyId === r.id ? "..." : "Rechazar" }}
-                          </button>
-                        </div>
-
-                        <div
-                          v-if="isOwnPointRequest(r) && !canSelfModerate"
-                          class="mt-2 text-[11px] text-white/50"
-                        >
-                          No puedes moderar tu propia solicitud.
-                        </div>
-                      </div>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-
-            <div v-else-if="activeTab === 'ranking'" class="space-y-3">
-              <div class="text-sm text-white/70">
-                Ranking por puntos aprobados.
-              </div>
-
-              <div class="p-4 border rounded-2xl border-white/10 bg-black/20">
-                <div class="flex items-center justify-between gap-3">
-                  <div class="text-xs text-white/60">Tabla</div>
-                  <button
-                    type="button"
-                    class="px-3 py-2 text-xs font-semibold text-white transition rounded-xl bg-white/10 ring-1 ring-white/10 hover:bg-white/15"
-                    :disabled="rankingLoading"
-                    @click="loadRanking"
-                  >
-                    {{ rankingLoading ? "Cargando…" : "Actualizar" }}
-                  </button>
-                </div>
-
-                <div v-if="rankingError" class="mt-2 text-sm text-rose-200">
-                  {{ rankingError }}
-                </div>
-                <div
-                  v-else-if="rankingLoading"
-                  class="mt-2 text-sm text-white/70"
-                >
-                  Cargando ranking…
-                </div>
-                <div
-                  v-else-if="!rankingRows.length"
-                  class="mt-2 text-sm text-white/70"
-                >
-                  Aún no hay puntos aprobados.
-                </div>
-
-                <ol v-else class="mt-3 space-y-2">
-                  <li
-                    v-for="row in rankingRows"
-                    :key="row.uid"
-                    class="p-3 border rounded-xl border-white/10 bg-white/5"
-                  >
-                    <div class="flex items-center justify-between gap-3">
-                      <div class="min-w-0">
-                        <div class="text-sm font-semibold text-white truncate">
-                          #{{ row.rank }} ·
-                          <button
-                            type="button"
-                            class="hover:underline"
-                            :title="userLabel(row.uid)"
-                            @click="emit('open-profile', row.uid, leagueId)"
-                          >
-                            {{ userLabel(row.uid) }}
-                          </button>
-                        </div>
-                        <div class="mt-1 text-xs text-white/60">
-                          Puntos aprobados:
-                          <span class="font-semibold">{{ row.points }}</span>
-                        </div>
-                      </div>
-                      <div class="text-lg font-extrabold text-emerald-300">
-                        {{ row.points }}
-                      </div>
-                    </div>
-                  </li>
-                </ol>
-              </div>
-            </div>
-
-            <div v-else-if="activeTab === 'history'" class="space-y-3">
-              <div class="p-4 border rounded-2xl border-white/10 bg-black/20">
-                <div class="flex items-center justify-between gap-3">
-                  <div class="text-xs text-white/60">Historial</div>
-                  <button
-                    type="button"
-                    class="px-3 py-2 text-xs font-semibold text-white transition rounded-xl bg-white/10 ring-1 ring-white/10 hover:bg-white/15"
-                    :disabled="historyLoading"
-                    @click="loadHistory"
-                  >
-                    {{ historyLoading ? "Cargando…" : "Actualizar" }}
-                  </button>
-                </div>
-
-                <div v-if="historyError" class="mt-2 text-sm text-rose-200">
-                  {{ historyError }}
-                </div>
-
-                <div
-                  v-else-if="historyLoading"
-                  class="mt-2 text-sm text-white/70"
-                >
-                  Cargando historial…
-                </div>
-
-                <div
-                  v-else-if="!historyItems.length"
-                  class="mt-2 text-sm text-white/70"
-                >
-                  Aún no hay eventos.
-                </div>
-
-                <ul v-else class="mt-3 space-y-2">
-                  <li
-                    v-for="it in historyItems"
-                    :key="it.id"
-                    class="p-3 border rounded-xl border-white/10 bg-white/5"
-                  >
-                    <div class="flex items-start justify-between gap-3">
-                      <div class="min-w-0">
-                        <div class="text-sm font-semibold text-white truncate">
-                          {{ historyTitle(it) }}
-                        </div>
-                        <div class="mt-1 text-xs break-words text-white/60">
-                          {{ historySubtitle(it) }}
-                        </div>
-                      </div>
-                      <div class="text-[11px] text-white/50">
-                        {{ historyMeta(it) }}
-                      </div>
-                    </div>
-
-                    <details class="mt-2">
-                      <summary class="text-xs cursor-pointer text-white/70">
-                        Ver detalle
-                      </summary>
-                      <pre
-                        class="mt-2 p-2 overflow-auto text-[11px] leading-snug rounded-lg bg-black/30 text-white/70"
-                        >{{ JSON.stringify(it.payload || {}, null, 2) }}</pre
-                      >
-                    </details>
-                  </li>
-                </ul>
-              </div>
-
-              <div class="text-xs text-white/50">
-                Tip: aquí verás quién solicitó, quién gestionó (aprobó/rechazó),
-                y el motivo cuando exista.
-              </div>
-            </div>
-
-            <div
-              v-else-if="activeTab === 'join'"
-              class="p-4 border rounded-2xl border-white/10 bg-black/20"
-            >
-              <div class="flex items-center justify-between gap-3">
-                <div class="text-xs text-white/60">Solicitudes de unión</div>
-                <button
-                  type="button"
-                  class="px-3 py-2 text-xs font-semibold text-white transition rounded-xl bg-white/10 ring-1 ring-white/10 hover:bg-white/15"
-                  :disabled="joinLoading"
-                  @click="loadJoinRequests"
-                >
-                  {{ joinLoading ? "Cargando…" : "Actualizar" }}
-                </button>
-              </div>
-
-              <div v-if="joinError" class="mt-2 text-sm text-rose-200">
-                {{ joinError }}
-              </div>
-
-              <div v-else-if="joinLoading" class="mt-2 text-sm text-white/70">
-                Cargando solicitudes…
-              </div>
-
-              <template v-else>
-                <div class="mt-2 text-sm text-white/70">
-                  <template v-if="!canModerate">
-                    Solo admins/owners pueden moderar uniones.
-                  </template>
                   <template v-else>
-                    Aprueba o rechaza solicitudes pendientes para añadir
-                    miembros.
+                    <div class="mt-2 text-sm text-white/70">
+                      <template v-if="!canModerate">
+                        Solo admins/owners pueden moderar uniones.
+                      </template>
+                      <template v-else>
+                        Aprueba o rechaza solicitudes pendientes para añadir
+                        miembros.
+                      </template>
+                    </div>
+
+                    <div
+                      v-if="canModerate && !pendingJoinRequests.length"
+                      class="mt-3 text-sm text-white/70"
+                    >
+                      No hay solicitudes pendientes.
+                    </div>
+
+                    <ul v-else-if="canModerate" class="mt-3 space-y-2">
+                      <li
+                        v-for="r in pendingJoinRequests"
+                        :key="r.id"
+                        class="p-3 border rounded-xl border-white/10 bg-white/5"
+                      >
+                        <div class="flex items-start justify-between gap-3">
+                          <div class="min-w-0">
+                            <div class="text-sm font-semibold text-white">
+                              <span class="text-white/80">{{
+                                userLabel(r.uid)
+                              }}</span>
+                            </div>
+                          </div>
+
+                          <div class="flex flex-col gap-2 sm:flex-row">
+                            <button
+                              type="button"
+                              class="px-3 py-2 text-xs font-semibold transition rounded-xl bg-emerald-300 text-gray-950 ring-1 ring-emerald-200/30 hover:opacity-95 disabled:opacity-60"
+                              :disabled="joinBusyId === r.id"
+                              @click="decideJoin(r, 'approved')"
+                            >
+                              {{ joinBusyId === r.id ? "..." : "Aprobar" }}
+                            </button>
+                            <button
+                              type="button"
+                              class="px-3 py-2 text-xs font-semibold text-white transition rounded-xl bg-rose-500/80 ring-1 ring-rose-400/30 hover:bg-rose-500 disabled:opacity-60"
+                              :disabled="joinBusyId === r.id"
+                              @click="decideJoin(r, 'rejected')"
+                            >
+                              {{ joinBusyId === r.id ? "..." : "Rechazar" }}
+                            </button>
+                          </div>
+                        </div>
+                      </li>
+                    </ul>
                   </template>
                 </div>
-
-                <div
-                  v-if="canModerate && !pendingJoinRequests.length"
-                  class="mt-3 text-sm text-white/70"
-                >
-                  No hay solicitudes pendientes.
-                </div>
-
-                <ul v-else-if="canModerate" class="mt-3 space-y-2">
-                  <li
-                    v-for="r in pendingJoinRequests"
-                    :key="r.id"
-                    class="p-3 border rounded-xl border-white/10 bg-white/5"
-                  >
-                    <div class="flex items-start justify-between gap-3">
-                      <div class="min-w-0">
-                        <div class="text-sm font-semibold text-white">
-                          <span class="text-white/80">{{
-                            userLabel(r.uid)
-                          }}</span>
-                        </div>
-                      </div>
-
-                      <div class="flex flex-col gap-2 sm:flex-row">
-                        <button
-                          type="button"
-                          class="px-3 py-2 text-xs font-semibold transition rounded-xl bg-emerald-300 text-gray-950 ring-1 ring-emerald-200/30 hover:opacity-95 disabled:opacity-60"
-                          :disabled="joinBusyId === r.id"
-                          @click="decideJoin(r, 'approved')"
-                        >
-                          {{ joinBusyId === r.id ? "..." : "Aprobar" }}
-                        </button>
-                        <button
-                          type="button"
-                          class="px-3 py-2 text-xs font-semibold text-white transition rounded-xl bg-rose-500/80 ring-1 ring-rose-400/30 hover:bg-rose-500 disabled:opacity-60"
-                          :disabled="joinBusyId === r.id"
-                          @click="decideJoin(r, 'rejected')"
-                        >
-                          {{ joinBusyId === r.id ? "..." : "Rechazar" }}
-                        </button>
-                      </div>
-                    </div>
-                  </li>
-                </ul>
-              </template>
+              </div>
             </div>
           </div>
         </template>
@@ -1028,6 +1104,7 @@ import {
   TrophyIcon,
   UserGroupIcon,
 } from "@heroicons/vue/24/solid";
+import { subscribeLeagueAws } from "../services/awsWs";
 
 const emit = defineEmits([
   "back",
@@ -1094,6 +1171,52 @@ const myEditNote = ref({});
 const rejectDraft = ref({});
 
 const lastEmittedLeagueName = ref("");
+
+let unsubscribeLeagueWs = null;
+
+async function syncWsSubscription() {
+  try {
+    if (unsubscribeLeagueWs) {
+      unsubscribeLeagueWs();
+      unsubscribeLeagueWs = null;
+    }
+
+    if (!membership.value) return;
+
+    unsubscribeLeagueWs = await subscribeLeagueAws(
+      props.leagueId,
+      async (ev) => {
+        const t = String(ev?.type || "");
+        if (!t) return;
+
+        // Refrescos mínimos por tipo (sin animaciones ni UX extra)
+        if (t.startsWith("pointRequest.")) {
+          await Promise.all([
+            loadMyRequests(),
+            loadRanking(),
+            canModerate.value ? loadPending() : Promise.resolve(),
+            loadHistory(),
+          ]);
+        }
+
+        if (t.startsWith("joinRequest.")) {
+          await Promise.all([
+            canModerateJoins.value ? loadJoinRequests() : Promise.resolve(),
+            loadHistory(),
+          ]);
+          league.value = await fetchLeagueByIdFirestore(props.leagueId);
+        }
+
+        if (t === "member.created") {
+          await Promise.all([loadMembers(), loadHistory()]);
+          league.value = await fetchLeagueByIdFirestore(props.leagueId);
+        }
+      },
+    );
+  } catch {
+    // WS opcional; no bloquea UI
+  }
+}
 
 watch(
   league,
@@ -1513,7 +1636,12 @@ function historySubtitle(it) {
 
 function historyMeta(it) {
   // Evitamos IDs largos en UI. Si el doc tiene createdAt, lo mostramos.
-  const d = it?.createdAt?.toDate ? it.createdAt.toDate() : null;
+  const d = it?.createdAt?.toDate
+    ? it.createdAt.toDate()
+    : typeof it?.createdAt === "string"
+      ? new Date(it.createdAt)
+      : null;
+  if (d && Number.isNaN(d.getTime())) return "";
   if (!d) return "";
   try {
     return d.toLocaleString();
@@ -1718,6 +1846,7 @@ async function saveMyRequest(req) {
   myReqError.value = "";
   try {
     await updateMyPointRequestFirestore({
+      leagueId: props.leagueId,
       requestId: req.id,
       note: myEditNote.value?.[req.id] || "",
     });
@@ -1736,7 +1865,10 @@ async function deleteMyRequest(req) {
   myReqBusyId.value = req.id;
   myReqError.value = "";
   try {
-    await deleteMyPointRequestFirestore({ requestId: req.id });
+    await deleteMyPointRequestFirestore({
+      leagueId: props.leagueId,
+      requestId: req.id,
+    });
     await loadMyRequests();
     toast.success("Solicitud borrada");
   } catch (e) {
@@ -1836,4 +1968,13 @@ async function requestPoints() {
 }
 
 onMounted(load);
+
+watch([() => props.leagueId, membership], syncWsSubscription, {
+  immediate: true,
+});
+
+onBeforeUnmount(() => {
+  if (unsubscribeLeagueWs) unsubscribeLeagueWs();
+  unsubscribeLeagueWs = null;
+});
 </script>

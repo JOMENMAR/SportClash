@@ -1,0 +1,24 @@
+{
+  "name": "sportclash-backend",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "node -e \"console.log('no lint configured')\"",
+    "deploy": "serverless deploy",
+    "remove": "serverless remove"
+  },
+  "dependencies": {
+    "@aws-sdk/client-apigatewaymanagementapi": "^3.864.0",
+    "@aws-sdk/client-dynamodb": "^3.864.0",
+    "@aws-sdk/lib-dynamodb": "^3.864.0",
+    "jose": "^5.10.0"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.152",
+    "serverless": "^3.40.0",
+    "serverless-esbuild": "^1.55.1",
+    "typescript": "^5.8.3"
+  }
+}
