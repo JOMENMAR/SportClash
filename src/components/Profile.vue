@@ -13,26 +13,59 @@
         </div>
 
         <div class="flex items-start gap-3">
+          <button
+            v-if="isSelf"
+            type="button"
+            class="inline-flex h-10 w-10 items-center justify-center rounded-xl ring-1 shrink-0 transition active:scale-[0.98]"
+            :class="accentBase.badgeWrapClass"
+            :style="badgeWrapStyle"
+            aria-label="Cambiar icono y color"
+            @click="openDecor"
+          >
+            <component
+              v-if="profileBadgeSpec.kind === 'icon'"
+              :is="profileBadgeSpec.icon"
+              class="h-5 w-5"
+              :class="accentBase.badgeTextClass"
+              :style="badgeTextStyle"
+            />
+            <span
+              v-else
+              class="text-lg"
+              :class="accentBase.badgeTextClass"
+              :style="badgeTextStyle"
+              >{{ profileBadgeSpec.text || "·" }}</span
+            >
+          </button>
+
           <div
+            v-else
             class="inline-flex h-10 w-10 items-center justify-center rounded-xl ring-1 shrink-0"
-            :class="accent.badgeWrapClass"
+            :class="accentBase.badgeWrapClass"
+            :style="badgeWrapStyle"
             aria-hidden
           >
             <component
               v-if="profileBadgeSpec.kind === 'icon'"
               :is="profileBadgeSpec.icon"
               class="h-5 w-5"
-              :class="accent.badgeTextClass"
+              :class="accentBase.badgeTextClass"
+              :style="badgeTextStyle"
             />
-            <span v-else class="text-lg" :class="accent.badgeTextClass">{{
-              profileBadgeSpec.text || "·"
-            }}</span>
+            <span
+              v-else
+              class="text-lg"
+              :class="accentBase.badgeTextClass"
+              :style="badgeTextStyle"
+              >{{ profileBadgeSpec.text || "·" }}</span
+            >
           </div>
 
           <div class="min-w-0">
             <h1
               class="text-2xl font-extrabold tracking-tight leading-none truncate"
-              :class="accent.titleTextClass"
+              :class="accentBase.titleTextClass"
+              :style="titleStyle"
             >
               {{ headerTitle }}
             </h1>
@@ -93,62 +126,10 @@
             </div>
 
             <div>
-              <label class="text-sm text-white/70">Foto de perfil</label>
-              <div class="mt-2 flex items-start gap-3">
-                <div
-                  class="mt-0.5 inline-flex h-12 w-12 items-center justify-center rounded-xl ring-1"
-                  :class="accent.badgeWrapClass"
-                  aria-hidden
-                >
-                  <component
-                    v-if="profileBadgeSpec.kind === 'icon'"
-                    :is="profileBadgeSpec.icon"
-                    class="h-6 w-6"
-                    :class="accent.badgeTextClass"
-                  />
-                  <span v-else class="text-lg" :class="accent.badgeTextClass">{{
-                    profileBadgeSpec.text || "·"
-                  }}</span>
-                </div>
-
-                <div class="flex-1">
-                  <div
-                    class="grid grid-cols-6 gap-2 rounded-xl border border-white/10 bg-black/20 p-3"
-                  >
-                    <button
-                      type="button"
-                      class="inline-flex items-center justify-center rounded-xl px-2 py-2 text-xs font-semibold ring-1 transition"
-                      :class="
-                        !profileIconKey
-                          ? 'bg-emerald-300/15 text-emerald-100 ring-emerald-200/20'
-                          : 'bg-white/5 text-white/80 ring-white/10 hover:bg-white/10'
-                      "
-                      @click="profileIconKey = ''"
-                      title="Sin icono (usar inicial)"
-                    >
-                      Aa
-                    </button>
-
-                    <button
-                      v-for="opt in iconOptions"
-                      :key="opt.key"
-                      type="button"
-                      class="inline-flex items-center justify-center rounded-xl px-2 py-2 ring-1 transition"
-                      :class="
-                        profileIconKey === opt.key
-                          ? 'bg-emerald-300/15 text-emerald-100 ring-emerald-200/20'
-                          : 'bg-white/5 text-white/80 ring-white/10 hover:bg-white/10'
-                      "
-                      @click="profileIconKey = opt.key"
-                      :title="opt.label"
-                    >
-                      <component :is="opt.icon" class="h-5 w-5" />
-                    </button>
-                  </div>
-                  <div class="mt-1 text-xs text-white/60">
-                    Elige un icono para tu perfil (estilo Discord).
-                  </div>
-                </div>
+              <label class="text-sm text-white/70">Decoración</label>
+              <div class="mt-1 text-xs text-white/60">
+                Pulsa la insignia (la letra) de arriba para cambiar tu icono y
+                color.
               </div>
             </div>
 
@@ -174,27 +155,8 @@
 
               <div>
                 <label class="text-sm text-white/70">Color</label>
-                <div class="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                  <button
-                    v-for="o in PROFILE_ACCENT_OPTIONS"
-                    :key="o.key"
-                    type="button"
-                    class="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold ring-1 transition"
-                    :class="
-                      profileAccent === o.key
-                        ? 'bg-white/15 text-white ring-emerald-200/30'
-                        : 'bg-white/5 text-white/80 ring-white/10 hover:bg-white/10'
-                    "
-                    @click="profileAccent = o.key"
-                    :title="o.label"
-                  >
-                    <span
-                      class="inline-flex h-6 w-6 rounded-lg ring-1"
-                      :class="o.badgeWrapClass"
-                      aria-hidden
-                    />
-                    <span class="truncate">{{ o.label }}</span>
-                  </button>
+                <div class="mt-1 text-xs text-white/60">
+                  Se cambia desde la insignia de arriba.
                 </div>
               </div>
             </div>
@@ -470,12 +432,145 @@
         danger
         @confirm="$emit('logout')"
       />
+
+      <!-- Panel decoración (icono + color) -->
+      <Teleport to="body">
+        <div
+          v-if="decorOpen"
+          class="fixed inset-0 z-[10002] overflow-hidden"
+          @click.self="closeDecor"
+          @keydown.esc.prevent="closeDecor"
+          tabindex="-1"
+          ref="decorOverlayEl"
+        >
+          <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+          <div class="absolute inset-0 grid p-4 place-items-center">
+            <div
+              class="w-full max-w-2xl overflow-hidden border shadow-2xl rounded-2xl border-white/10 bg-gray-950/85 ring-1 ring-white/5"
+              role="dialog"
+              aria-modal="true"
+            >
+              <div class="p-4 border-b border-white/10 bg-white/5">
+                <div class="text-sm font-extrabold text-white">Decoración</div>
+                <div class="mt-1 text-xs text-white/60">
+                  Icono y color del perfil.
+                </div>
+              </div>
+
+              <div class="p-4 space-y-4">
+                <div>
+                  <div class="text-xs text-white/60">Icono</div>
+                  <div
+                    class="mt-2 grid grid-cols-6 gap-2 rounded-xl border border-white/10 bg-black/20 p-3"
+                  >
+                    <button
+                      type="button"
+                      class="inline-flex items-center justify-center rounded-xl px-2 py-2 text-xs font-semibold ring-1 transition"
+                      :class="
+                        !profileIconKey
+                          ? 'bg-emerald-300/15 text-emerald-100 ring-emerald-200/20'
+                          : 'bg-white/5 text-white/80 ring-white/10 hover:bg-white/10'
+                      "
+                      @click="profileIconKey = ''"
+                      title="Sin icono (usar inicial)"
+                    >
+                      Aa
+                    </button>
+
+                    <button
+                      v-for="opt in iconOptions"
+                      :key="opt.key"
+                      type="button"
+                      class="inline-flex items-center justify-center rounded-xl px-2 py-2 ring-1 transition"
+                      :class="
+                        profileIconKey === opt.key
+                          ? 'bg-emerald-300/15 text-emerald-100 ring-emerald-200/20'
+                          : 'bg-white/5 text-white/80 ring-white/10 hover:bg-white/10'
+                      "
+                      @click="profileIconKey = opt.key"
+                      :title="opt.label"
+                    >
+                      <component :is="opt.icon" class="h-5 w-5" />
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <div class="flex items-center justify-between gap-3">
+                    <div>
+                      <div class="text-xs text-white/60">Color</div>
+                      <div class="mt-1 text-xs text-white/60">
+                        Puedes usar la paleta o elegir un color personalizado.
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      class="px-3 py-2 text-xs font-semibold text-white transition rounded-xl bg-white/10 ring-1 ring-white/10 hover:bg-white/15"
+                      @click="clearCustomAccent"
+                      :disabled="!profileAccentHex"
+                    >
+                      Restablecer
+                    </button>
+                  </div>
+
+                  <div class="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    <button
+                      v-for="o in PROFILE_ACCENT_OPTIONS"
+                      :key="o.key"
+                      type="button"
+                      class="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold ring-1 transition"
+                      :class="
+                        !profileAccentHex && profileAccent === o.key
+                          ? 'bg-white/15 text-white ring-emerald-200/30'
+                          : 'bg-white/5 text-white/80 ring-white/10 hover:bg-white/10'
+                      "
+                      @click="selectAccentKey(o.key)"
+                      :title="o.label"
+                    >
+                      <span
+                        class="inline-flex h-6 w-6 rounded-lg ring-1"
+                        :class="o.badgeWrapClass"
+                        aria-hidden
+                      />
+                      <span class="truncate">{{ o.label }}</span>
+                    </button>
+                  </div>
+
+                  <div class="mt-3 flex flex-wrap items-center gap-3">
+                    <label class="text-sm text-white/70">Personalizado</label>
+                    <input
+                      type="color"
+                      class="h-10 w-14 rounded-xl bg-white/5 ring-1 ring-white/10"
+                      :value="pickerColor"
+                      @input="onPickColor"
+                      title="Elegir color"
+                    />
+                    <div class="text-xs text-white/60">
+                      {{ profileAccentHex || "(usando paleta)" }}
+                    </div>
+                  </div>
+                </div>
+
+                <div class="flex items-center justify-end gap-2">
+                  <button
+                    type="button"
+                    class="px-3 py-2 text-xs font-semibold text-white transition rounded-xl bg-white/10 ring-1 ring-white/10 hover:bg-white/15 active:scale-[0.98]"
+                    @click="closeDecor"
+                  >
+                    Cerrar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Teleport>
     </div>
   </BasePage>
 </template>
 
 <script setup>
-import { computed, ref, watch } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 import { auth, db } from "../firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import BasePage from "./BasePage.vue";
@@ -519,8 +614,12 @@ const profileEmoji = ref("");
 const profileIconKey = ref("");
 const profileBanner = ref("classic");
 const profileAccent = ref("emerald");
+const profileAccentHex = ref("");
 const status = ref("");
 const bio = ref("");
+
+const decorOpen = ref(false);
+const decorOverlayEl = ref(null);
 
 const iconOptions = LEAGUE_ICON_OPTIONS;
 
@@ -565,13 +664,102 @@ const headerSubtitle = computed(() => {
     : "Vista de solo lectura.";
 });
 
-const accent = computed(() => getProfileAccent(profileAccent.value));
+const accentBase = computed(() =>
+  getProfileAccent(profileAccentHex.value ? "neutral" : profileAccent.value),
+);
+
+const titleStyle = computed(() => {
+  const hex = String(profileAccentHex.value || "").trim();
+  if (!/^#[0-9a-fA-F]{6}$/.test(hex)) return undefined;
+  return { color: hex };
+});
+
+function hexToRgb(hex) {
+  const h = String(hex || "").replace("#", "");
+  if (!/^[0-9a-fA-F]{6}$/.test(h)) return null;
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  return { r, g, b };
+}
+
+function rgbaFromHex(hex, alpha) {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return undefined;
+  const a = Number.isFinite(alpha) ? alpha : 1;
+  return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${a})`;
+}
+
+function readableTextColor(hex) {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return undefined;
+  // luminancia relativa aproximada
+  const y = (rgb.r * 299 + rgb.g * 587 + rgb.b * 114) / 1000;
+  return y >= 140 ? "#0b0f19" : "#ffffff";
+}
+
+const badgeWrapStyle = computed(() => {
+  const hex = String(profileAccentHex.value || "").trim();
+  if (!/^#[0-9a-fA-F]{6}$/.test(hex)) return undefined;
+  return {
+    backgroundColor: rgbaFromHex(hex, 0.18),
+  };
+});
+
+const badgeTextStyle = computed(() => {
+  const hex = String(profileAccentHex.value || "").trim();
+  if (!/^#[0-9a-fA-F]{6}$/.test(hex)) return undefined;
+  const c = readableTextColor(hex);
+  return c ? { color: c } : undefined;
+});
 
 const bannerLayers = computed(() =>
   getProfileBannerLayers(profileBanner.value).map((x) => ({
     class: String(x?.class || ""),
   })),
 );
+
+function openDecor() {
+  if (!isSelf.value) return;
+  decorOpen.value = true;
+  nextTick(() => {
+    try {
+      decorOverlayEl.value?.focus?.();
+    } catch {
+      // ignore
+    }
+  });
+}
+
+function closeDecor() {
+  decorOpen.value = false;
+}
+
+function selectAccentKey(key) {
+  profileAccentHex.value = "";
+  profileAccent.value = String(key || "emerald");
+}
+
+function clearCustomAccent() {
+  profileAccentHex.value = "";
+}
+
+const pickerColor = computed(() => {
+  const hex = String(profileAccentHex.value || "").trim();
+  if (/^#[0-9a-fA-F]{6}$/.test(hex)) return hex;
+  // fallback razonable según la paleta
+  const k = String(profileAccent.value || "emerald");
+  if (k === "sky") return "#38bdf8";
+  if (k === "rose") return "#fb7185";
+  if (k === "neutral") return "#a3a3a3";
+  return "#34d399";
+});
+
+function onPickColor(ev) {
+  const v = String(ev?.target?.value || "").trim();
+  if (!/^#[0-9a-fA-F]{6}$/.test(v)) return;
+  profileAccentHex.value = v;
+}
 
 const profileBadgeSpec = computed(() => {
   return leagueBadgeSpec({
@@ -611,6 +799,11 @@ async function load() {
       profileAccent.value = isProfileAccentKey(data?.profileAccent)
         ? data.profileAccent
         : "emerald";
+      profileAccentHex.value =
+        typeof data?.profileAccentHex === "string" &&
+        /^#[0-9a-fA-F]{6}$/.test(data.profileAccentHex)
+          ? data.profileAccentHex
+          : "";
       status.value = String(data?.status ?? "").slice(0, 40);
       bio.value = String(data?.bio ?? "").slice(0, 200);
       toast.info("Perfil cargado", { timeoutMs: 1400 });
@@ -926,6 +1119,7 @@ async function onSave() {
         profileIconKey: String(profileIconKey.value || "").trim(),
         profileBanner: String(profileBanner.value || "classic"),
         profileAccent: String(profileAccent.value || "emerald"),
+        profileAccentHex: String(profileAccentHex.value || "").trim(),
         status: String(status.value || "")
           .trim()
           .slice(0, 40),
