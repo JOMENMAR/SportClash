@@ -1,8 +1,8 @@
 <script setup>
 import { ref, onMounted, watch, computed } from "vue";
-import { auth, db } from "./firebase";
+import { auth } from "./firebase";
 import { onAuthStateChanged, getRedirectResult } from "firebase/auth";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { awsFetchJson } from "./services/awsHttp";
 
 import {
   log,
@@ -130,30 +130,22 @@ async function hasCompletedProfile(user) {
 
   log("Profile", "hasCompletedProfile: start", { uid: user.uid });
 
-  // 1) Firestore (fuente de verdad)
+  // 1) AWS (fuente de verdad)
   try {
-    const snap = await getDoc(doc(db, "users", user.uid));
-    if (snap.exists()) {
-      const data = snap.data();
-      log("Profile", "hasCompletedProfile: firestore", {
-        uid: user.uid,
-        exists: true,
-        profileCompleted: data?.profileCompleted === true,
-      });
-      if (data?.profileCompleted === true) return true;
-    } else {
-      log("Profile", "hasCompletedProfile: firestore", {
-        uid: user.uid,
-        exists: false,
-      });
-    }
+    const res = await awsFetchJson("/me");
+    const completed = res?.user?.profileCompleted === true;
+    log("Profile", "hasCompletedProfile: aws", {
+      uid: user.uid,
+      profileCompleted: completed,
+    });
+    if (completed) return true;
   } catch (e) {
-    warn("Profile", "hasCompletedProfile: firestore failed, using local", {
+    warn("Profile", "hasCompletedProfile: aws failed, using local", {
       uid: user.uid,
       code: e?.code,
       message: e?.message,
     });
-    // si Firestore falla (rules / offline), usamos fallback
+    // si AWS falla (offline), usamos fallback
   }
 
   // 2) Fallback local (evita el problema del F5 mientras no tengamos rules perfectas)
@@ -177,19 +169,18 @@ async function markProfileCompleted(user) {
   log("Profile", "markProfileCompleted: start", { uid: user.uid });
 
   try {
-    await setDoc(
-      doc(db, "users", user.uid),
-      { profileCompleted: true, profileCompletedAt: new Date().toISOString() },
-      { merge: true },
-    );
-    log("Profile", "markProfileCompleted: firestore OK", { uid: user.uid });
+    await awsFetchJson("/me", {
+      method: "PUT",
+      body: { profileCompleted: true },
+    });
+    log("Profile", "markProfileCompleted: aws OK", { uid: user.uid });
   } catch (e) {
-    warn("Profile", "markProfileCompleted: firestore failed", {
+    warn("Profile", "markProfileCompleted: aws failed", {
       uid: user.uid,
       code: e?.code,
       message: e?.message,
     });
-    // si Firestore falla, al menos persistimos local
+    // si AWS falla, al menos persistimos local
   }
 
   try {

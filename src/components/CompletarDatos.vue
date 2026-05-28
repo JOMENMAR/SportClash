@@ -84,8 +84,8 @@
 
 <script setup>
 import { ref } from "vue";
-import { auth, db } from "../firebase";
-import { doc, setDoc } from "firebase/firestore";
+import { auth } from "../firebase";
+import { awsFetchJson } from "../services/awsHttp";
 
 const emit = defineEmits(["done"]);
 
@@ -102,18 +102,16 @@ const enviarDatos = async () => {
     const user = auth.currentUser;
     if (!user?.uid) throw new Error("No hay usuario autenticado");
 
-    // Guardamos perfil + marca de perfil completado.
-    await setDoc(
-      doc(db, "users", user.uid),
-      {
+    // Guardamos perfil + marca de perfil completado (AWS).
+    await awsFetchJson("/me", {
+      method: "PUT",
+      body: {
         nombre: nombre.value,
         apodo: apodo.value,
         fechaNacimiento: fechaNacimiento.value,
         profileCompleted: true,
-        profileCompletedAt: new Date().toISOString(),
       },
-      { merge: true },
-    );
+    });
 
     // Fallback local para que con F5 no se repita aunque Firestore falle.
     try {

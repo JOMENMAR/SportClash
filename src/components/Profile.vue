@@ -567,7 +567,9 @@
                 <div>
                   <div class="flex items-center justify-between gap-3">
                     <div>
-                      <div class="text-xs text-white/60">Fondo de la página</div>
+                      <div class="text-xs text-white/60">
+                        Fondo de la página
+                      </div>
                       <div class="mt-1 text-xs text-white/60">
                         Puedes usar presets o elegir cualquier color.
                       </div>
@@ -638,11 +640,11 @@
 
 <script setup>
 import { computed, nextTick, ref, watch } from "vue";
-import { auth, db } from "../firebase";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { auth } from "../firebase";
 import BasePage from "./BasePage.vue";
 import { toast } from "../services/toasts";
 import ConfirmModal from "./ConfirmModal.vue";
+import { awsFetchJson } from "../services/awsHttp";
 import {
   PROFILE_ACCENT_OPTIONS,
   PROFILE_BANNER_OPTIONS,
@@ -661,6 +663,7 @@ import {
 } from "../services/leagueIcons";
 import {
   fetchLeagueAthleteAchievementsFirestore,
+  fetchMyMembershipInLeagueFirestore,
   fetchUserApprovedPointRequestsFirestore,
 } from "../services/leaguesFirestore";
 
@@ -898,39 +901,41 @@ async function load() {
 
   busy.value = true;
   try {
-    const snap = await getDoc(doc(db, "users", uid));
-    if (snap.exists()) {
-      const data = snap.data();
-      nombre.value = data?.nombre ?? "";
-      apodo.value = data?.apodo ?? "";
-      fechaNacimiento.value = data?.fechaNacimiento ?? "";
-      profileEmoji.value = data?.profileEmoji ?? "";
-      profileIconKey.value = isLeagueIconKey(data?.profileIconKey)
-        ? String(data.profileIconKey)
+    const isMe = isSelf.value;
+    const res = isMe
+      ? await awsFetchJson("/me")
+      : await awsFetchJson(`/users/${encodeURIComponent(String(uid))}`);
+    const data = res?.user || {};
+
+    nombre.value = data?.nombre ?? "";
+    apodo.value = data?.apodo ?? "";
+    fechaNacimiento.value = isMe ? data?.fechaNacimiento ?? "" : "";
+    profileEmoji.value = "";
+    profileIconKey.value = isLeagueIconKey(data?.profileIconKey)
+      ? String(data.profileIconKey)
+      : "";
+    profileBanner.value = isProfileBannerKey(data?.profileBanner)
+      ? data.profileBanner
+      : "classic";
+    profileAccent.value = isProfileAccentKey(data?.profileAccent)
+      ? data.profileAccent
+      : "emerald";
+    profileAccentHex.value =
+      typeof data?.profileAccentHex === "string" &&
+      /^#[0-9a-fA-F]{6}$/.test(data.profileAccentHex)
+        ? data.profileAccentHex
         : "";
-      profileBanner.value = isProfileBannerKey(data?.profileBanner)
-        ? data.profileBanner
-        : "classic";
-      profileAccent.value = isProfileAccentKey(data?.profileAccent)
-        ? data.profileAccent
-        : "emerald";
-      profileAccentHex.value =
-        typeof data?.profileAccentHex === "string" &&
-        /^#[0-9a-fA-F]{6}$/.test(data.profileAccentHex)
-          ? data.profileAccentHex
-          : "";
-      profilePageBg.value = isProfilePageBgKey(data?.profilePageBg)
-        ? data.profilePageBg
-        : "none";
-      profilePageBgHex.value =
-        typeof data?.profilePageBgHex === "string" &&
-        /^#[0-9a-fA-F]{6}$/.test(data.profilePageBgHex)
-          ? data.profilePageBgHex
-          : "";
-      status.value = String(data?.status ?? "").slice(0, 40);
-      bio.value = String(data?.bio ?? "").slice(0, 200);
-      toast.info("Perfil cargado", { timeoutMs: 1400 });
-    }
+    profilePageBg.value = isProfilePageBgKey(data?.profilePageBg)
+      ? data.profilePageBg
+      : "none";
+    profilePageBgHex.value =
+      typeof data?.profilePageBgHex === "string" &&
+      /^#[0-9a-fA-F]{6}$/.test(data.profilePageBgHex)
+        ? data.profilePageBgHex
+        : "";
+    status.value = String(data?.status ?? "").slice(0, 40);
+    bio.value = String(data?.bio ?? "").slice(0, 200);
+    toast.info("Perfil cargado", { timeoutMs: 1400 });
   } catch (e) {
     error.value = e?.message || "No se pudo cargar el perfil";
     toast.error(error.value);
@@ -1189,9 +1194,8 @@ async function loadBadges() {
     // Añade chapa de rol dentro de la liga (owner/admin)
     let role = "";
     try {
-      const memberId = `${leagueId}_${uid}`;
-      const mSnap = await getDoc(doc(db, "leagueMembers", memberId));
-      if (mSnap.exists()) role = String(mSnap.data()?.role || "");
+      const mine = await fetchMyMembershipInLeagueFirestore(leagueId);
+      if (mine && String(mine?.uid || "") === uid) role = String(mine.role || "");
     } catch {
       role = "";
     }
@@ -1232,13 +1236,12 @@ async function onSave() {
 
   busy.value = true;
   try {
-    await setDoc(
-      doc(db, "users", user.uid),
-      {
+    await awsFetchJson("/me", {
+      method: "PUT",
+      body: {
         nombre: nombre.value,
         apodo: apodo.value,
         fechaNacimiento: fechaNacimiento.value,
-        profileEmoji: "",
         profileIconKey: String(profileIconKey.value || "").trim(),
         profileBanner: String(profileBanner.value || "classic"),
         profileAccent: String(profileAccent.value || "emerald"),
@@ -1251,10 +1254,8 @@ async function onSave() {
         bio: String(bio.value || "")
           .trim()
           .slice(0, 200),
-        updatedAt: new Date().toISOString(),
       },
-      { merge: true },
-    );
+    });
 
     info.value = "Perfil actualizado.";
     toast.success(info.value);

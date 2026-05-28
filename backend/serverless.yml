@@ -83,6 +83,27 @@ provider:
           Resource: "arn:aws:execute-api:*:*:*/${sls:stage}/POST/@connections/*"
 
 functions:
+  httpGetMe:
+    handler: src/handlers/httpGetMe.handler
+    events:
+      - httpApi:
+          method: GET
+          path: /me
+
+  httpUpdateMe:
+    handler: src/handlers/httpUpdateMe.handler
+    events:
+      - httpApi:
+          method: PUT
+          path: /me
+
+  httpGetUser:
+    handler: src/handlers/httpGetUser.handler
+    events:
+      - httpApi:
+          method: GET
+          path: /users/{uid}
+
   httpCreateLeague:
     handler: src/handlers/httpCreateLeague.handler
     events:

@@ -45,6 +45,21 @@ export type PointRequestItem = {
 export type UserItem = {
   uid: string;
   ownedLeagueId?: string;
+  // Perfil (opcional)
+  nombre?: string;
+  apodo?: string;
+  fechaNacimiento?: string;
+  status?: string;
+  bio?: string;
+  profileIconKey?: string;
+  profileBanner?: string;
+  profileAccent?: string;
+  profileAccentHex?: string;
+  profilePageBg?: string;
+  profilePageBgHex?: string;
+  profileCompleted?: boolean;
+  profileCompletedAt?: string;
+  updatedAt?: string;
 };
 
 export type ConnectionItem = {

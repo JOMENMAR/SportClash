@@ -1,5 +1,4 @@
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "../firebase";
+import { awsFetchJson } from "./awsHttp";
 
 // Cache simple en memoria (por sesión)
 const cache = new Map();
@@ -28,8 +27,8 @@ export async function fetchUserProfileLabel(uid) {
 
   if (cache.has(u)) return cache.get(u);
 
-  const snap = await getDoc(doc(db, "users", u));
-  const nombre = snap.exists() ? pickDisplayName(snap.data()) : "";
+  const res = await awsFetchJson(`/users/${encodeURIComponent(u)}`);
+  const nombre = pickDisplayName(res?.user);
   const out = { uid: u, nombre };
   cache.set(u, out);
   return out;
