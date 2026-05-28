@@ -909,7 +909,7 @@ async function load() {
 
     nombre.value = data?.nombre ?? "";
     apodo.value = data?.apodo ?? "";
-    fechaNacimiento.value = isMe ? data?.fechaNacimiento ?? "" : "";
+    fechaNacimiento.value = isMe ? (data?.fechaNacimiento ?? "") : "";
     profileEmoji.value = "";
     profileIconKey.value = isLeagueIconKey(data?.profileIconKey)
       ? String(data.profileIconKey)
@@ -1195,7 +1195,8 @@ async function loadBadges() {
     let role = "";
     try {
       const mine = await fetchMyMembershipInLeagueFirestore(leagueId);
-      if (mine && String(mine?.uid || "") === uid) role = String(mine.role || "");
+      if (mine && String(mine?.uid || "") === uid)
+        role = String(mine.role || "");
     } catch {
       role = "";
     }
