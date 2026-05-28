@@ -1,7 +1,8 @@
 import { auth } from "../firebase";
+import { getAwsWsUrl } from "./appConfig";
 
 function getWsUrlBase() {
-  return String(import.meta.env.VITE_AWS_WS_URL || "").replace(/\/+$/, "");
+  return String(getAwsWsUrl() || "").replace(/\/+$/, "");
 }
 
 let ws = null;

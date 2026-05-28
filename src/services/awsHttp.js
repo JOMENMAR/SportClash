@@ -1,10 +1,8 @@
 import { auth } from "../firebase";
+import { getAwsApiBaseUrl } from "./appConfig";
 
 function getBaseUrl() {
-  return String(import.meta.env.VITE_AWS_API_BASE_URL || "").replace(
-    /\/+$/,
-    "",
-  );
+  return String(getAwsApiBaseUrl() || "").replace(/\/+$/, "");
 }
 
 export function isAwsEnabled() {
@@ -13,10 +11,17 @@ export function isAwsEnabled() {
 
 function buildUrl(path, query) {
   const base = getBaseUrl();
-  if (!base) throw new Error("Falta VITE_AWS_API_BASE_URL en .env");
+  if (!base) {
+    throw new Error(
+      "Falta VITE_AWS_API_BASE_URL (.env) o AWS_API_BASE_URL (public/runtime-config.js)"
+    );
+  }
 
   const cleanPath = path.startsWith("/") ? path : `/${path}`;
-  const url = new URL(base + cleanPath);
+  const isRelativeBase = /^\//.test(base);
+  const url = isRelativeBase
+    ? new URL(base + cleanPath, window.location.origin)
+    : new URL(base + cleanPath);
 
   if (query && typeof query === "object") {
     for (const [k, v] of Object.entries(query)) {
