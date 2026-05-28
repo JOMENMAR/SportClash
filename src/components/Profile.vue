@@ -1,8 +1,15 @@
 <template>
   <BasePage>
     <template #bg>
-      <div v-if="pageBgLayers.length" aria-hidden class="absolute inset-0">
-        <div v-for="(l, i) in pageBgLayers" :key="i" :class="l.class" />
+      <div aria-hidden class="absolute inset-0">
+        <div
+          v-if="pageBgFillStyle"
+          class="absolute inset-0"
+          :style="pageBgFillStyle"
+        />
+        <div v-if="pageBgLayers.length" class="absolute inset-0">
+          <div v-for="(l, i) in pageBgLayers" :key="i" :class="l.class" />
+        </div>
       </div>
     </template>
 
@@ -558,11 +565,29 @@
                 </div>
 
                 <div>
-                  <div class="text-xs text-white/60">Fondo de la página</div>
+                  <div class="flex items-center justify-between gap-3">
+                    <div>
+                      <div class="text-xs text-white/60">Fondo de la página</div>
+                      <div class="mt-1 text-xs text-white/60">
+                        Puedes usar presets o elegir cualquier color.
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      class="px-3 py-2 text-xs font-semibold text-white transition rounded-xl bg-white/10 ring-1 ring-white/10 hover:bg-white/15"
+                      @click="clearCustomPageBg"
+                      :disabled="!profilePageBgHex"
+                    >
+                      Restablecer
+                    </button>
+                  </div>
+
                   <div class="mt-2">
                     <select
                       v-model="profilePageBg"
                       class="sc-dark-select w-full rounded-xl bg-white/10 px-4 py-3 text-sm text-white ring-1 ring-white/10 focus:outline-none"
+                      :disabled="!!profilePageBgHex"
+                      title="Presets (deshabilitado si usas color personalizado)"
                     >
                       <option
                         v-for="o in PROFILE_PAGE_BG_OPTIONS"
@@ -573,6 +598,21 @@
                       </option>
                     </select>
                   </div>
+
+                  <div class="mt-3 flex flex-wrap items-center gap-3">
+                    <label class="text-sm text-white/70">Personalizado</label>
+                    <input
+                      type="color"
+                      class="h-10 w-14 rounded-xl bg-white/5 ring-1 ring-white/10"
+                      :value="pageBgPickerColor"
+                      @input="onPickPageBgColor"
+                      title="Elegir color de fondo"
+                    />
+                    <div class="text-xs text-white/60">
+                      {{ profilePageBgHex || "(usando presets)" }}
+                    </div>
+                  </div>
+
                   <div class="mt-1 text-xs text-white/60">
                     Este fondo se ve detrás de toda la página del perfil.
                   </div>
@@ -646,6 +686,7 @@ const profileBanner = ref("classic");
 const profileAccent = ref("emerald");
 const profileAccentHex = ref("");
 const profilePageBg = ref("none");
+const profilePageBgHex = ref("");
 const status = ref("");
 const bio = ref("");
 
@@ -751,10 +792,25 @@ const bannerLayers = computed(() =>
 );
 
 const pageBgLayers = computed(() =>
-  getProfilePageBgLayers(profilePageBg.value).map((x) => ({
+  (profilePageBgHex.value
+    ? []
+    : getProfilePageBgLayers(profilePageBg.value)
+  ).map((x) => ({
     class: String(x?.class || ""),
   })),
 );
+
+const pageBgFillStyle = computed(() => {
+  const hex = String(profilePageBgHex.value || "").trim();
+  if (!/^#[0-9a-fA-F]{6}$/.test(hex)) return undefined;
+  const a1 = rgbaFromHex(hex, 0.14);
+  const a2 = rgbaFromHex(hex, 0.12);
+  return {
+    background:
+      `radial-gradient(circle at 10% 10%, ${a1} 0%, rgba(0,0,0,0) 60%),` +
+      `radial-gradient(circle at 90% 90%, ${a2} 0%, rgba(0,0,0,0) 55%)`,
+  };
+});
 
 function openDecor() {
   if (!isSelf.value) return;
@@ -796,6 +852,28 @@ function onPickColor(ev) {
   const v = String(ev?.target?.value || "").trim();
   if (!/^#[0-9a-fA-F]{6}$/.test(v)) return;
   profileAccentHex.value = v;
+}
+
+const pageBgPickerColor = computed(() => {
+  const hex = String(profilePageBgHex.value || "").trim();
+  if (/^#[0-9a-fA-F]{6}$/.test(hex)) return hex;
+  // fallback según el preset
+  const k = String(profilePageBg.value || "none");
+  if (k === "emerald") return "#34d399";
+  if (k === "sky") return "#38bdf8";
+  if (k === "rose") return "#fb7185";
+  if (k === "classic") return "#38bdf8";
+  return "#0f172a";
+});
+
+function onPickPageBgColor(ev) {
+  const v = String(ev?.target?.value || "").trim();
+  if (!/^#[0-9a-fA-F]{6}$/.test(v)) return;
+  profilePageBgHex.value = v;
+}
+
+function clearCustomPageBg() {
+  profilePageBgHex.value = "";
 }
 
 const profileBadgeSpec = computed(() => {
@@ -844,6 +922,11 @@ async function load() {
       profilePageBg.value = isProfilePageBgKey(data?.profilePageBg)
         ? data.profilePageBg
         : "none";
+      profilePageBgHex.value =
+        typeof data?.profilePageBgHex === "string" &&
+        /^#[0-9a-fA-F]{6}$/.test(data.profilePageBgHex)
+          ? data.profilePageBgHex
+          : "";
       status.value = String(data?.status ?? "").slice(0, 40);
       bio.value = String(data?.bio ?? "").slice(0, 200);
       toast.info("Perfil cargado", { timeoutMs: 1400 });
@@ -1161,6 +1244,7 @@ async function onSave() {
         profileAccent: String(profileAccent.value || "emerald"),
         profileAccentHex: String(profileAccentHex.value || "").trim(),
         profilePageBg: String(profilePageBg.value || "none"),
+        profilePageBgHex: String(profilePageBgHex.value || "").trim(),
         status: String(status.value || "")
           .trim()
           .slice(0, 40),
