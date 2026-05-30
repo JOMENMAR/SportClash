@@ -10,4 +10,14 @@
 window.__SPORTCLASH_CONFIG__ = {
   AWS_API_BASE_URL: "",
   AWS_WS_URL: "",
+
+  // Cognito Hosted UI (valores públicos, NO secretos)
+  // Ejemplo de dominio: https://tu-dominio.auth.eu-north-1.amazoncognito.com
+  COGNITO_DOMAIN: "",
+  COGNITO_CLIENT_ID: "",
+  // Normalmente el redirect es el origen de tu web (Vercel) o / si usas SPA.
+  COGNITO_REDIRECT_URI: "",
+  COGNITO_LOGOUT_URI: "",
+  // scope por defecto: openid email profile
+  COGNITO_SCOPES: "openid email profile",
 };

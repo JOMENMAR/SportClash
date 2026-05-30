@@ -640,11 +640,11 @@
 
 <script setup>
 import { computed, nextTick, ref, watch } from "vue";
-import { auth } from "../firebase";
 import BasePage from "./BasePage.vue";
 import { toast } from "../services/toasts";
 import ConfirmModal from "./ConfirmModal.vue";
 import { awsFetchJson } from "../services/awsHttp";
+import { getCurrentUser } from "../services/cognitoAuth";
 import {
   PROFILE_ACCENT_OPTIONS,
   PROFILE_BANNER_OPTIONS,
@@ -708,7 +708,7 @@ const globalBadges = ref([]);
 
 const viewingUid = computed(() => {
   const u = String(props.uid || "").trim();
-  return u || auth.currentUser?.uid || "";
+  return u || getCurrentUser()?.uid || "";
 });
 
 const leagueIdForBadges = computed(() => {
@@ -717,7 +717,7 @@ const leagueIdForBadges = computed(() => {
 });
 
 const isSelf = computed(() => {
-  const me = auth.currentUser?.uid || "";
+  const me = getCurrentUser()?.uid || "";
   return !!me && viewingUid.value === me;
 });
 
@@ -886,8 +886,8 @@ const profileBadgeSpec = computed(() => {
   });
 });
 
-const email = computed(() => auth.currentUser?.email ?? "—");
-const emailVerified = computed(() => auth.currentUser?.emailVerified ?? false);
+const email = computed(() => getCurrentUser()?.email ?? "—");
+const emailVerified = computed(() => getCurrentUser()?.emailVerified ?? false);
 
 async function load() {
   error.value = "";
@@ -1222,7 +1222,7 @@ async function onSave() {
   error.value = "";
   info.value = "";
 
-  const user = auth.currentUser;
+  const user = getCurrentUser();
   if (!user?.uid) {
     error.value = "No hay usuario autenticado";
     toast.error(error.value);

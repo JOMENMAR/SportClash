@@ -2,17 +2,16 @@
 
 SportClash es una app web para competir con tus colegas en **ligas mensuales**: cada vez que haces deporte registras un **punto** (como solicitud), y los roles de moderación de la liga lo **aprueban o rechazan** para mantener el ranking limpio.
 
-Este repo es el **frontend** (Vue 3 + Vite + Tailwind) y usa **Firebase Auth**.
+Este repo es el **frontend** (Vue 3 + Vite + Tailwind) y usa **AWS Cognito Hosted UI** (OAuth2 + PKCE) para autenticación.
 
-Además, el proyecto soporta un backend propio en **AWS** (REST + WebSocket) como camino de migración desde Firestore.
+El backend es propio en **AWS** (REST + WebSocket).
 
 ## Estado actual (qué ya está hecho)
 
-- Auth con email/contraseña + proveedores sociales.
-- Verificación de email (flujo de verificación dedicado).
-- Onboarding de perfil: pantalla de completar datos y persistencia de `profileCompleted` en `users/{uid}` (con fallback en `localStorage` para evitar bucles al refrescar cuando Firestore falla por rules).
-- Ligas en Firestore: crear (pública/privada), listar (“Mis ligas” / “Global”), abrir una liga.
-  - Nota: se eliminaron los códigos; la entrada se hace por **solicitud** y aprobación.
+- Auth vía Cognito Hosted UI (el tipo de login/proveedores se configura en Cognito).
+- Onboarding de perfil: pantalla de completar datos y persistencia de `profileCompleted` en backend (con fallback en `localStorage`).
+- Ligas: crear (pública/privada), listar (“Mis ligas”), abrir una liga.
+  - Nota: la entrada se hace por **solicitud** y aprobación.
 - Interior de liga (pantalla tipo dashboard):
   - Roles: `owner`, `admin`, `member`.
   - Gestión de miembros: expulsar, cambiar rol (con reglas en UI, p. ej. no tocar al owner).
@@ -29,8 +28,7 @@ Además, el proyecto soporta un backend propio en **AWS** (REST + WebSocket) com
 ## Estructura del proyecto
 
 - `src/components/`: componentes Vue (Login, Register, Verify, Home, etc.).
-- `src/firebase.js`: inicialización de Firebase (lee credenciales desde variables de entorno de Vite).
-- `src/services/`: capa de servicios (logger y acceso a Firestore para ligas).
+- `src/services/`: capa de servicios (config + auth Cognito + acceso a AWS).
 - `src/style.css`: Tailwind + estilos globales.
 
 ## Navegación (sin router)
@@ -41,63 +39,6 @@ No se usa Vue Router. `src/App.vue` orquesta una “step machine” con pantalla
 - Dentro de la app: Home / Ligas / Global / Perfil
 
 Además, al abrir una liga desde “Mis ligas” o “Global”, se navega a la pantalla de detalle de liga.
-
-## Firestore (modelo actual)
-
-Colecciones principales:
-
-- `users/{uid}`
-  - `profileCompleted: boolean`
-  - `profileCompletedAt: string (ISO)`
-  - Campos de perfil (según `Profile.vue`)
-
-- `leagues/{leagueId}`
-  - `name: string`
-  - `iconKey?: string` (opcional; icono de deporte en UI)
-  - `visibility: 'public' | 'private'`
-  - `dailyPointsLimit: number`
-  - `createdAt: serverTimestamp()`
-  - `createdBy: uid`
-  - `membersCount: number`
-
-- `leagueMembers/{leagueId_uid}`
-  - `leagueId: string`
-  - `uid: string`
-  - `role: 'owner' | 'admin' | 'member'`
-  - `joinedAt: serverTimestamp()`
-
-- `leagueJoinRequests/{leagueId_uid}`
-  - `leagueId: string`
-  - `uid: string`
-  - `status: 'pending' | 'approved' | 'rejected'`
-  - `createdAt: serverTimestamp()`
-  - `decidedAt: serverTimestamp()`
-  - `decidedBy: uid`
-
-- `pointRequests/{leagueId_uid_ts}`
-  - `leagueId: string`
-  - `uid: string`
-  - `points: number` (v1: siempre 1)
-  - `note: string`
-  - `performedOn: 'YYYY-MM-DD'` (obligatorio)
-  - `status: 'pending' | 'approved' | 'rejected'`
-  - `createdAt: serverTimestamp()`
-  - `decidedAt: serverTimestamp()`
-  - `decidedBy: uid`
-  - `rejectReason: string | null`
-  - `rejectedOn: 'YYYY-MM-DD' | null`
-
-- `leagueHistory/{leagueId_type_ts_actorUid_rand}`
-  - `leagueId: string`
-  - `type: string` (p. ej. `pointRequest.decide`, `joinRequest.decide`, `member.remove`)
-  - `actorUid: string`
-  - `payload: object`
-  - `createdAt: serverTimestamp()`
-
-Notas:
-
-- Las queries que usan `where(...) + orderBy(...)` pueden pedir índices compuestos. Si Firestore te muestra un enlace para “Create index”, créalo y vuelve a ejecutar.
-- La auditoría (`leagueHistory`) es “best-effort”: si falla escribir el historial, no debe romper la acción principal.
 
 ## Setup local
 
@@ -112,17 +53,9 @@ npm install
 npm run dev
 ```
 
-## Backend AWS (opcional)
+## Backend AWS
 
-El frontend puede operar en 2 modos:
-
-- **Firestore** (por defecto): si `VITE_AWS_API_BASE_URL` está vacío.
-- **AWS**: si configuras `VITE_AWS_API_BASE_URL` (y opcionalmente `VITE_AWS_WS_URL` para real-time).
-
-Importante:
-
-- Incluso en modo AWS, el login sigue siendo con **Firebase Auth** (el frontend envía el `idToken` como `Authorization: Bearer ...`).
-- Para que el backend acepte tokens de Firebase, despliega el backend con `AUTH_PROVIDER=firebase`.
+Este frontend asume backend en AWS.
 
 ### Variables de entorno (frontend)
 
@@ -130,8 +63,14 @@ En tu `.env` (raíz) añade/ajusta:
 
 - `VITE_AWS_API_BASE_URL` (REST)
 - `VITE_AWS_WS_URL` (WebSocket, opcional)
+- `VITE_COGNITO_DOMAIN`
+- `VITE_COGNITO_CLIENT_ID`
+- `VITE_COGNITO_REDIRECT_URI` (recomendado; debe estar permitido en Cognito)
+- `VITE_COGNITO_LOGOUT_URI` (recomendado; debe estar permitido en Cognito)
+- `VITE_COGNITO_SCOPES` (opcional; default: `openid email profile`)
 
-Si están vacías, el frontend sigue usando Firestore.
+Alternativa a `.env`: también puedes editar `public/runtime-config.js` en el hosting
+para cambiar endpoints/config sin recompilar.
 
 ### Cómo obtener las URLs (backend)
 
@@ -151,35 +90,14 @@ npm run build
 npm run preview
 ```
 
-## Firebase (configuración)
-
-1. Crea un proyecto en Firebase y habilita:
-
-- **Authentication** (Email/Password y/o los proveedores que uses).
-- **Firestore**.
-
-2. Crea un archivo `.env` (puedes partir de `.env.example`) y rellena tus credenciales del proyecto.
-
-Notas:
-
-- En Vite las variables deben empezar por `VITE_`.
-- No subas `.env` a GitHub (ya está en `.gitignore`).
-
-3. Revisa las reglas de Firestore.
-
-- En desarrollo puedes empezar con reglas permisivas.
-- En producción necesitas reglas que implementen permisos por rol (owner/admin/member).
-
 ## Debug
 
 - Logs: el logger se puede activar con `localStorage` usando la clave `sportclash:debug`.
-- Si estás depurando lecturas de Firestore, existe el script `src/debugFirestoreReads.js`.
 
 ## Roadmap (corto)
 
-- Reglas de seguridad de Firestore estables (roles y permisos sin “fallbacks”).
-- Mejoras de rendimiento (agregados/estadísticas precomputadas en servidor o funciones).
-- Mejoras de escalado en queries/listados (paginación y/o desnormalización).
+- Mejoras de rendimiento (agregados/estadísticas precomputadas en servidor).
+- Mejoras de escalado en queries/listados (paginación).
 
 ## Backend (AWS)
 

@@ -1,5 +1,5 @@
-import { auth } from "../firebase";
 import { getAwsApiBaseUrl } from "./appConfig";
+import { getBearerToken } from "./cognitoAuth";
 
 function getBaseUrl() {
   return String(getAwsApiBaseUrl() || "").replace(/\/+$/, "");
@@ -13,7 +13,7 @@ function buildUrl(path, query) {
   const base = getBaseUrl();
   if (!base) {
     throw new Error(
-      "Falta VITE_AWS_API_BASE_URL (.env) o AWS_API_BASE_URL (public/runtime-config.js)"
+      "Falta VITE_AWS_API_BASE_URL (.env) o AWS_API_BASE_URL (public/runtime-config.js)",
     );
   }
 
@@ -33,11 +33,7 @@ function buildUrl(path, query) {
   return url.toString();
 }
 
-async function getBearerToken() {
-  const user = auth.currentUser;
-  if (!user) throw new Error("Debes iniciar sesión");
-  return await user.getIdToken();
-}
+// getBearerToken viene de Cognito (Hosted UI)
 
 export async function awsFetchJson(path, opts = {}) {
   const method = String(opts.method || "GET").toUpperCase();

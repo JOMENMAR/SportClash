@@ -1,5 +1,5 @@
-import { auth } from "../firebase";
 import { getAwsWsUrl } from "./appConfig";
+import { getBearerToken } from "./cognitoAuth";
 
 function getWsUrlBase() {
   return String(getAwsWsUrl() || "").replace(/\/+$/, "");
@@ -31,9 +31,7 @@ async function openWsIfNeeded() {
     return ws;
   }
 
-  const user = auth.currentUser;
-  if (!user) throw new Error("Debes iniciar sesión");
-  const token = await user.getIdToken();
+  const token = await getBearerToken();
 
   const url = new URL(base);
   url.searchParams.set("token", token);

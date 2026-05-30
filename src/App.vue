@@ -1,8 +1,13 @@
 <script setup>
 import { ref, onMounted, watch, computed } from "vue";
-import { auth } from "./firebase";
-import { onAuthStateChanged, getRedirectResult } from "firebase/auth";
 import { awsFetchJson } from "./services/awsHttp";
+import {
+  initAuthFromRedirectIfNeeded,
+  initAuthFromStorage,
+  getCurrentUser,
+  onAuthChange,
+  signOut,
+} from "./services/cognitoAuth";
 
 import {
   log,
@@ -13,8 +18,6 @@ import {
 } from "./services/logger";
 
 import Login from "./components/Login.vue";
-import Register from "./components/Register.vue";
-import VerifyCode from "./components/VerifyCode.vue";
 import CompletarDatos from "./components/CompletarDatos.vue";
 import Home from "./components/Home.vue";
 import Leagues from "./components/Leagues.vue";
@@ -29,7 +32,6 @@ import { useLeaguesStore } from "./services/leaguesStore";
 
 // Secuencia sin router: login -> register -> verify -> completar -> home
 const step = ref("login");
-const needsEmailVerification = ref(false);
 const previousStep = ref("home");
 const activeLeagueId = ref("");
 const activeLeagueInitialTab = ref("");
@@ -195,111 +197,59 @@ async function markProfileCompleted(user) {
   }
 }
 
+function userFromAuth() {
+  return getCurrentUser();
+}
+
+async function bootFromAuthUser(user) {
+  appBooting.value = true;
+  appBootMessage.value = "Cargando…";
+
+  if (!user?.uid) {
+    step.value = "login";
+    appBooting.value = false;
+    return;
+  }
+
+  try {
+    appBootMessage.value = "Preparando tu sesión…";
+    const completed = await hasCompletedProfile(user);
+    step.value = completed ? "home" : "complete";
+    if (completed) openPendingJoinIfReady();
+  } finally {
+    appBooting.value = false;
+  }
+}
+
 onMounted(() => {
   log("App", "mounted", { url: window.location.href });
 
   consumeJoinParamFromUrl();
   hydratePendingJoinLeagueId();
 
-  // Si venimos de un login social con redirect, consumimos el resultado aquí (solo 1 vez).
-  // Esto sirve para:
-  // - Capturar errores de redirect y mostrarlos en consola.
-  // - Evitar que la app "se quede" en login sin feedback.
-  let pendingRedirect = false;
-  try {
-    pendingRedirect =
-      sessionStorage.getItem("sportclash:authRedirectPending") === "1";
-  } catch {
-    pendingRedirect = false;
-  }
-
-  if (pendingRedirect) {
-    authRedirectFinishing.value = true;
-    let providerLabel = "(unknown)";
-    try {
-      providerLabel =
-        sessionStorage.getItem("sportclash:authRedirectProvider") ||
-        providerLabel;
-    } catch {
-      // ignore
-    }
-
-    log("Auth", "redirect pending detected", {
-      provider: providerLabel,
-      url: window.location.href,
-    });
-
-    getRedirectResult(auth)
-      .then((res) => {
-        if (res?.user) {
-          log("Auth", "redirect result OK", {
-            uid: res.user.uid,
-            providerId: res?.providerId,
-          });
-        } else {
-          // Esto suele pasar cuando:
-          // - El redirect se completó pero el SDK no tiene un credential que resolver, o
-          // - Ya se consumió en una carga anterior, o
-          // - El login falló/abortó antes de volver.
-          warn("Auth", "redirect result empty (not an error)");
-        }
-      })
-      .catch((e) => {
-        group("Auth", `getRedirectResult failed (${providerLabel})`);
+  // Cognito: si venimos de Hosted UI con `?code=...`, intercambiamos por tokens.
+  // Mostramos un estado de "finalizando" para evitar pantallazo en blanco.
+  authRedirectFinishing.value = true;
+  Promise.resolve()
+    .then(async () => {
+      try {
+        await initAuthFromRedirectIfNeeded();
+      } catch (e) {
+        group("Auth", "Cognito redirect failed");
         logError("Auth", "error", e);
-        log("Auth", "code", e?.code);
-        log("Auth", "message", e?.message);
-        log("Auth", "customData", e?.customData);
         groupEnd();
-      })
-      .finally(() => {
-        try {
-          sessionStorage.removeItem("sportclash:authRedirectPending");
-          sessionStorage.removeItem("sportclash:authRedirectProvider");
-        } catch {
-          // ignore
-        }
-        authRedirectFinishing.value = false;
-      });
-  }
-
-  onAuthStateChanged(auth, async (user) => {
-    log("Auth", "onAuthStateChanged", {
-      hasUser: !!user,
-      uid: user?.uid || null,
-      emailVerified: user?.emailVerified ?? null,
-      providerData: (user?.providerData || [])
-        .map((p) => p?.providerId)
-        .filter(Boolean),
+      }
+    })
+    .finally(() => {
+      authRedirectFinishing.value = false;
+      // Si no venimos de redirect, cargamos desde storage.
+      initAuthFromStorage();
+      bootFromAuthUser(userFromAuth());
     });
 
-    appBooting.value = true;
-    appBootMessage.value = "Cargando…";
-
-    if (!user) {
-      step.value = "login";
-      needsEmailVerification.value = false;
-      appBooting.value = false;
-      return;
-    }
-    // La verificación la mostramos solo si venimos de Register.
-    if (needsEmailVerification.value) {
-      if (!user.emailVerified) {
-        step.value = "verify";
-        appBooting.value = false;
-        return;
-      }
-      needsEmailVerification.value = false;
-    }
-    // Completar datos solo la primera vez.
-    try {
-      appBootMessage.value = "Preparando tu sesión…";
-      const completed = await hasCompletedProfile(user);
-      step.value = completed ? "home" : "complete";
-      if (completed) openPendingJoinIfReady();
-    } finally {
-      appBooting.value = false;
-    }
+  // Mantiene la UI en sync si cambia el auth (logout, refresh token, etc.)
+  onAuthChange(({ user }) => {
+    bootFromAuthUser(user);
   });
 });
 
@@ -311,19 +261,9 @@ function goLogin() {
   step.value = "login";
 }
 
-function goRegister() {
-  step.value = "register";
-}
-
-function goVerify() {
-  needsEmailVerification.value = true;
-  step.value = "verify";
-}
-
 async function logout() {
-  await auth.signOut();
+  await signOut();
   step.value = "login";
-  needsEmailVerification.value = false;
 }
 
 function goHome() {
@@ -457,19 +397,7 @@ function navActive() {
         </div>
       </div>
 
-      <Login v-else-if="step === 'login'" @register="goRegister" />
-      <Register
-        v-else-if="step === 'register'"
-        @registered="goVerify"
-        @back="goLogin"
-      />
-      <VerifyCode
-        v-else-if="step === 'verify'"
-        @verified="
-          ((needsEmailVerification.value = false), (step = 'complete'))
-        "
-        @back="goLogin"
-      />
+      <Login v-else-if="step === 'login'" />
       <CompletarDatos v-else-if="step === 'complete'" @done="step = 'home'" />
 
       <Home

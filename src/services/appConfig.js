@@ -29,3 +29,39 @@ export function getAwsWsUrl() {
 
   return "";
 }
+
+function readCognitoField(name, envKey) {
+  const fromEnv = String(import.meta.env[envKey] || "").trim();
+  if (fromEnv) return fromEnv;
+  const runtime = readRuntimeConfig();
+  const fromRuntime = String(runtime?.[name] || "").trim();
+  return fromRuntime;
+}
+
+export function getCognitoConfig() {
+  const domain = readCognitoField("COGNITO_DOMAIN", "VITE_COGNITO_DOMAIN");
+  const clientId = readCognitoField(
+    "COGNITO_CLIENT_ID",
+    "VITE_COGNITO_CLIENT_ID",
+  );
+  const redirectUriRaw = readCognitoField(
+    "COGNITO_REDIRECT_URI",
+    "VITE_COGNITO_REDIRECT_URI",
+  );
+  const logoutUriRaw = readCognitoField(
+    "COGNITO_LOGOUT_URI",
+    "VITE_COGNITO_LOGOUT_URI",
+  );
+  const scopes = readCognitoField("COGNITO_SCOPES", "VITE_COGNITO_SCOPES");
+
+  const redirectUri = redirectUriRaw || window.location.origin;
+  const logoutUri = logoutUriRaw || window.location.origin;
+
+  return {
+    domain: domain.replace(/\/+$/, ""),
+    clientId: String(clientId || "").trim(),
+    redirectUri,
+    logoutUri,
+    scopes: String(scopes || "openid email profile").trim(),
+  };
+}

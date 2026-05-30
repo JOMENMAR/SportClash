@@ -1094,9 +1094,9 @@ import {
   updateMyPointRequestFirestore,
 } from "../services/leaguesFirestore";
 import BasePage from "./BasePage.vue";
-import { auth } from "../firebase";
 import { fetchUserProfileLabels } from "../services/userProfiles";
 import { leagueBadgeSpec } from "../services/leagueIcons";
+import { getCurrentUser } from "../services/cognitoAuth";
 import {
   BoltIcon,
   ClockIcon,
@@ -1424,7 +1424,7 @@ const canManageMembers = computed(() => {
 
 const isOwner = computed(() => membership.value?.role === "owner");
 
-const myUid = computed(() => auth.currentUser?.uid || "");
+const myUid = computed(() => getCurrentUser()?.uid || "");
 
 const canSelfModerate = computed(() => isOwner.value);
 

@@ -84,8 +84,8 @@
 
 <script setup>
 import { ref } from "vue";
-import { auth } from "../firebase";
 import { awsFetchJson } from "../services/awsHttp";
+import { getCurrentUser } from "../services/cognitoAuth";
 
 const emit = defineEmits(["done"]);
 
@@ -99,7 +99,7 @@ const enviarDatos = async () => {
   loading.value = true;
   error.value = "";
   try {
-    const user = auth.currentUser;
+    const user = getCurrentUser();
     if (!user?.uid) throw new Error("No hay usuario autenticado");
 
     // Guardamos perfil + marca de perfil completado (AWS).
