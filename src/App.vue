@@ -10,6 +10,8 @@ import {
   signOut,
 } from "./services/cognitoAuth";
 
+import { toast } from "./services/toasts";
+
 import {
   log,
   warn,
@@ -48,6 +50,34 @@ const authRedirectFinishing = ref(false);
 
 const SKIP_AUTO_LOGIN_ONCE_KEY = "sportclash:cognito:skip_autologin_once";
 const autoLoginStarted = ref(false);
+
+function consumeCognitoErrorFromUrlIfAny() {
+  try {
+    const url = new URL(window.location.href);
+    const err = url.searchParams.get("error");
+    if (!err) return false;
+
+    const desc = url.searchParams.get("error_description") || "";
+
+    // Evita bucle: si Cognito nos manda un error, no auto-redirigimos otra vez.
+    try {
+      sessionStorage.setItem(SKIP_AUTO_LOGIN_ONCE_KEY, "1");
+    } catch {
+      // ignore
+    }
+
+    const msg = desc ? `${err}: ${desc}` : String(err);
+    toast.error(`Login falló: ${msg}`);
+
+    url.searchParams.delete("error");
+    url.searchParams.delete("error_description");
+    url.searchParams.delete("state");
+    window.history.replaceState({}, "", url.toString());
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 // Evita el flash del login al refrescar: esperamos al primer onAuthStateChanged
 // y, si hay usuario, a la comprobación de perfil.
@@ -260,6 +290,9 @@ async function bootFromAuthUser(user) {
 
 onMounted(() => {
   log("App", "mounted", { url: window.location.href });
+
+  // Si Cognito devuelve un error (?error=...), lo consumimos para evitar bucles.
+  consumeCognitoErrorFromUrlIfAny();
 
   consumeJoinParamFromUrl();
   hydratePendingJoinLeagueId();
