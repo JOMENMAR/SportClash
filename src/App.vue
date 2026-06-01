@@ -50,12 +50,15 @@ const authRedirectFinishing = ref(false);
 
 const SKIP_AUTO_LOGIN_ONCE_KEY = "sportclash:cognito:skip_autologin_once";
 const autoLoginStarted = ref(false);
+const authErrorThisLoad = ref(false);
 
 function consumeCognitoErrorFromUrlIfAny() {
   try {
     const url = new URL(window.location.href);
     const err = url.searchParams.get("error");
     if (!err) return false;
+
+    authErrorThisLoad.value = true;
 
     const desc = url.searchParams.get("error_description") || "";
 
@@ -251,6 +254,7 @@ function consumeSkipAutoLoginOnce() {
 async function maybeAutoLogin() {
   if (authRedirectFinishing.value) return;
   if (autoLoginStarted.value) return;
+  if (authErrorThisLoad.value) return;
 
   const user = userFromAuth();
   if (user?.uid) return;
