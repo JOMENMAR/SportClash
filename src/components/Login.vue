@@ -68,6 +68,27 @@
         {{ loading ? "Abriendo…" : "Crear cuenta" }}
       </button>
 
+      <div v-if="socialProviders.length" class="w-full mt-5">
+        <div class="flex items-center gap-3 mb-3 text-xs text-white/50">
+          <div class="h-px flex-1 bg-white/10" />
+          <span>o continúa con</span>
+          <div class="h-px flex-1 bg-white/10" />
+        </div>
+
+        <div class="grid w-full grid-cols-1 gap-2 sm:grid-cols-3">
+          <button
+            v-for="item in socialProviders"
+            :key="item.key"
+            type="button"
+            :disabled="loading"
+            class="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm font-semibold text-white/90 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+            @click="onSocial(item.provider)"
+          >
+            {{ item.label }}
+          </button>
+        </div>
+      </div>
+
       <div class="w-full mt-5 text-xs text-white/50">
         Nota: el registro, verificación y recuperación de contraseña se
         gestionan en Cognito.
@@ -77,13 +98,36 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { computed, ref, onMounted } from "vue";
 import { ExclamationTriangleIcon } from "@heroicons/vue/24/outline";
 import { setRememberChoice, startLoginRedirect } from "../services/cognitoAuth";
+import { getCognitoIdpConfig } from "../services/appConfig";
 
 const remember = ref(true);
 const loading = ref(false);
 const error = ref("");
+
+const idpCfg = getCognitoIdpConfig();
+const socialProviders = computed(() => {
+  const providers = [
+    {
+      key: "microsoft",
+      label: "Microsoft",
+      provider: String(idpCfg.microsoft || "").trim(),
+    },
+    {
+      key: "google",
+      label: "Google",
+      provider: String(idpCfg.google || "").trim(),
+    },
+    {
+      key: "discord",
+      label: "Discord",
+      provider: String(idpCfg.discord || "").trim(),
+    },
+  ];
+  return providers.filter((p) => p.provider);
+});
 
 onMounted(() => {
   setRememberChoice(remember.value);
@@ -109,6 +153,19 @@ async function onSignup() {
   try {
     setRememberChoice(remember.value);
     await startLoginRedirect({ screen: "signup", remember: remember.value });
+  } catch (e) {
+    error.value = e?.message ? String(e.message) : String(e);
+    loading.value = false;
+  }
+}
+
+async function onSocial(provider) {
+  if (loading.value) return;
+  loading.value = true;
+  error.value = "";
+  try {
+    setRememberChoice(remember.value);
+    await startLoginRedirect({ provider, remember: remember.value });
   } catch (e) {
     error.value = e?.message ? String(e.message) : String(e);
     loading.value = false;

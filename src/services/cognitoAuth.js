@@ -159,7 +159,11 @@ function normalizeDomain(domain) {
   return d.startsWith("http") ? d : `https://${d}`;
 }
 
-export async function startLoginRedirect({ screen = "login", remember } = {}) {
+export async function startLoginRedirect({
+  screen = "login",
+  remember,
+  provider = "",
+} = {}) {
   const cfg = getCognitoConfig();
   const domain = normalizeDomain(cfg.domain);
   if (!domain || !cfg.clientId) {
@@ -192,7 +196,13 @@ export async function startLoginRedirect({ screen = "login", remember } = {}) {
   url.searchParams.set("code_challenge", challenge);
   url.searchParams.set("code_challenge_method", "S256");
 
-  if (screen === "signup") {
+  const idp = String(provider || "").trim();
+  if (idp) {
+    // Fuerza un IdP concreto de Cognito (p.ej. Google, Microsoft, Discord).
+    url.searchParams.set("identity_provider", idp);
+  }
+
+  if (!idp && screen === "signup") {
     // Cognito respeta screen_hint=signup en Hosted UI.
     url.searchParams.set("screen_hint", "signup");
   }

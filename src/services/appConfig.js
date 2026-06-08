@@ -65,3 +65,17 @@ export function getCognitoConfig() {
     scopes: String(scopes || "openid email profile").trim(),
   };
 }
+
+export function getCognitoIdpConfig() {
+  return {
+    microsoft: readCognitoField(
+      "COGNITO_IDP_MICROSOFT",
+      "VITE_COGNITO_IDP_MICROSOFT",
+    ),
+    google: readCognitoField("COGNITO_IDP_GOOGLE", "VITE_COGNITO_IDP_GOOGLE"),
+    discord: readCognitoField(
+      "COGNITO_IDP_DISCORD",
+      "VITE_COGNITO_IDP_DISCORD",
+    ),
+  };
+}

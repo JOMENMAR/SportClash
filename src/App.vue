@@ -6,7 +6,6 @@ import {
   initAuthFromStorage,
   getCurrentUser,
   onAuthChange,
-  startLoginRedirect,
   signOut,
 } from "./services/cognitoAuth";
 
@@ -48,26 +47,13 @@ const pendingJoinLeagueId = ref("");
 
 const authRedirectFinishing = ref(false);
 
-const SKIP_AUTO_LOGIN_ONCE_KEY = "sportclash:cognito:skip_autologin_once";
-const autoLoginStarted = ref(false);
-const authErrorThisLoad = ref(false);
-
 function consumeCognitoErrorFromUrlIfAny() {
   try {
     const url = new URL(window.location.href);
     const err = url.searchParams.get("error");
     if (!err) return false;
 
-    authErrorThisLoad.value = true;
-
     const desc = url.searchParams.get("error_description") || "";
-
-    // Evita bucle: si Cognito nos manda un error, no auto-redirigimos otra vez.
-    try {
-      sessionStorage.setItem(SKIP_AUTO_LOGIN_ONCE_KEY, "1");
-    } catch {
-      // ignore
-    }
 
     const msg = desc ? `${err}: ${desc}` : String(err);
     toast.error(`Login falló: ${msg}`);
@@ -238,39 +224,6 @@ function userFromAuth() {
   return getCurrentUser();
 }
 
-function consumeSkipAutoLoginOnce() {
-  try {
-    const v = sessionStorage.getItem(SKIP_AUTO_LOGIN_ONCE_KEY);
-    if (v === "1") {
-      sessionStorage.removeItem(SKIP_AUTO_LOGIN_ONCE_KEY);
-      return true;
-    }
-  } catch {
-    // ignore
-  }
-  return false;
-}
-
-async function maybeAutoLogin() {
-  if (authRedirectFinishing.value) return;
-  if (autoLoginStarted.value) return;
-  if (authErrorThisLoad.value) return;
-
-  const user = userFromAuth();
-  if (user?.uid) return;
-
-  if (consumeSkipAutoLoginOnce()) return;
-
-  autoLoginStarted.value = true;
-  try {
-    await startLoginRedirect({ screen: "login" });
-  } catch (e) {
-    // Si falta config o Cognito no está listo, dejamos la pantalla de Login.
-    autoLoginStarted.value = false;
-    warn("Auth", "autoLogin: failed", { message: e?.message });
-  }
-}
-
 async function bootFromAuthUser(user) {
   appBooting.value = true;
   appBootMessage.value = "Cargando…";
@@ -278,7 +231,6 @@ async function bootFromAuthUser(user) {
   if (!user?.uid) {
     step.value = "login";
     appBooting.value = false;
-    await maybeAutoLogin();
     return;
   }
 
@@ -336,11 +288,6 @@ function goLogin() {
 }
 
 async function logout() {
-  try {
-    sessionStorage.setItem(SKIP_AUTO_LOGIN_ONCE_KEY, "1");
-  } catch {
-    // ignore
-  }
   await signOut();
   step.value = "login";
 }

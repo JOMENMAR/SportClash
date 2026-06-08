@@ -20,4 +20,8 @@ window.__SPORTCLASH_CONFIG__ = {
   COGNITO_LOGOUT_URI: "",
   // scope por defecto: openid email profile
   COGNITO_SCOPES: "openid email profile",
+  // (Opcional) nombres de IdP para mostrar botones sociales en la UI.
+  COGNITO_IDP_MICROSOFT: "",
+  COGNITO_IDP_GOOGLE: "",
+  COGNITO_IDP_DISCORD: "",
 };
