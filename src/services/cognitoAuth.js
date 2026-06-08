@@ -163,6 +163,7 @@ export async function startLoginRedirect({
   screen = "login",
   remember,
   provider = "",
+  scopes = "",
 } = {}) {
   const cfg = getCognitoConfig();
   const domain = normalizeDomain(cfg.domain);
@@ -191,7 +192,8 @@ export async function startLoginRedirect({
   url.searchParams.set("client_id", cfg.clientId);
   url.searchParams.set("response_type", "code");
   url.searchParams.set("redirect_uri", cfg.redirectUri);
-  url.searchParams.set("scope", cfg.scopes || "openid email profile");
+  const resolvedScopes = String(scopes || cfg.scopes || "openid email profile").trim();
+  url.searchParams.set("scope", resolvedScopes);
   url.searchParams.set("state", state);
   url.searchParams.set("code_challenge", challenge);
   url.searchParams.set("code_challenge_method", "S256");

@@ -72,10 +72,30 @@ export function getCognitoIdpConfig() {
       "COGNITO_IDP_MICROSOFT",
       "VITE_COGNITO_IDP_MICROSOFT",
     ),
+    microsoftScopes: readCognitoField(
+      "COGNITO_IDP_MICROSOFT_SCOPES",
+      "VITE_COGNITO_IDP_MICROSOFT_SCOPES",
+    ),
     google: readCognitoField("COGNITO_IDP_GOOGLE", "VITE_COGNITO_IDP_GOOGLE"),
+    googleScopes: readCognitoField(
+      "COGNITO_IDP_GOOGLE_SCOPES",
+      "VITE_COGNITO_IDP_GOOGLE_SCOPES",
+    ),
+    facebook: readCognitoField(
+      "COGNITO_IDP_FACEBOOK",
+      "VITE_COGNITO_IDP_FACEBOOK",
+    ),
+    facebookScopes: readCognitoField(
+      "COGNITO_IDP_FACEBOOK_SCOPES",
+      "VITE_COGNITO_IDP_FACEBOOK_SCOPES",
+    ),
     discord: readCognitoField(
       "COGNITO_IDP_DISCORD",
       "VITE_COGNITO_IDP_DISCORD",
+    ),
+    discordScopes: readCognitoField(
+      "COGNITO_IDP_DISCORD_SCOPES",
+      "VITE_COGNITO_IDP_DISCORD_SCOPES",
     ),
   };
 }

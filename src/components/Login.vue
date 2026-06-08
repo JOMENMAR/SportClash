@@ -75,14 +75,14 @@
           <div class="h-px flex-1 bg-white/10" />
         </div>
 
-        <div class="grid w-full grid-cols-1 gap-2 sm:grid-cols-3">
+        <div class="grid w-full grid-cols-1 gap-2 sm:grid-cols-2">
           <button
             v-for="item in socialProviders"
             :key="item.key"
             type="button"
             :disabled="loading"
             class="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm font-semibold text-white/90 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
-            @click="onSocial(item.provider)"
+            @click="onSocial(item.provider, item.scopes)"
           >
             {{ item.label }}
           </button>
@@ -114,16 +114,25 @@ const socialProviders = computed(() => {
       key: "microsoft",
       label: "Microsoft",
       provider: String(idpCfg.microsoft || "").trim(),
+      scopes: String(idpCfg.microsoftScopes || "").trim(),
     },
     {
       key: "google",
       label: "Google",
       provider: String(idpCfg.google || "").trim(),
+      scopes: String(idpCfg.googleScopes || "").trim(),
+    },
+    {
+      key: "facebook",
+      label: "Facebook",
+      provider: String(idpCfg.facebook || "").trim(),
+      scopes: String(idpCfg.facebookScopes || "").trim(),
     },
     {
       key: "discord",
       label: "Discord",
       provider: String(idpCfg.discord || "").trim(),
+      scopes: String(idpCfg.discordScopes || "").trim(),
     },
   ];
   return providers.filter((p) => p.provider);
@@ -159,13 +168,17 @@ async function onSignup() {
   }
 }
 
-async function onSocial(provider) {
+async function onSocial(provider, scopes = "") {
   if (loading.value) return;
   loading.value = true;
   error.value = "";
   try {
     setRememberChoice(remember.value);
-    await startLoginRedirect({ provider, remember: remember.value });
+    await startLoginRedirect({
+      provider,
+      scopes,
+      remember: remember.value,
+    });
   } catch (e) {
     error.value = e?.message ? String(e.message) : String(e);
     loading.value = false;

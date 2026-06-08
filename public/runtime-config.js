@@ -22,6 +22,11 @@ window.__SPORTCLASH_CONFIG__ = {
   COGNITO_SCOPES: "openid email profile",
   // (Opcional) nombres de IdP para mostrar botones sociales en la UI.
   COGNITO_IDP_MICROSOFT: "",
+  COGNITO_IDP_MICROSOFT_SCOPES: "",
   COGNITO_IDP_GOOGLE: "",
+  COGNITO_IDP_GOOGLE_SCOPES: "",
+  COGNITO_IDP_FACEBOOK: "",
+  COGNITO_IDP_FACEBOOK_SCOPES: "",
   COGNITO_IDP_DISCORD: "",
+  COGNITO_IDP_DISCORD_SCOPES: "",
 };
